@@ -1,0 +1,142 @@
+[
+{
+  "directory": "/home/robin/Desktop/Github/RX/build",
+  "command": "/usr/bin/gcc-12 -I/home/robin/Desktop/Github/RX/./core -I/home/robin/Desktop/Github/RX/./component -g -o CMakeFiles/Rx_Test.dir/flecs.c.o -c /home/robin/Desktop/Github/RX/flecs.c",
+  "file": "/home/robin/Desktop/Github/RX/flecs.c"
+},
+{
+  "directory": "/home/robin/Desktop/Github/RX/build",
+  "command": "/usr/bin/c++ -I/home/robin/Desktop/Github/RX/./core -I/home/robin/Desktop/Github/RX/./component -g -std=gnu++17 -o CMakeFiles/Rx_Test.dir/RxWorld.cpp.o -c /home/robin/Desktop/Github/RX/RxWorld.cpp",
+  "file": "/home/robin/Desktop/Github/RX/RxWorld.cpp"
+},
+{
+  "directory": "/home/robin/Desktop/Github/RX/build",
+  "command": "/usr/bin/c++ -g -std=gnu++17 -o core/CMakeFiles/neon_core.dir/window.cpp.o -c /home/robin/Desktop/Github/RX/core/window.cpp",
+  "file": "/home/robin/Desktop/Github/RX/core/window.cpp"
+},
+{
+  "directory": "/home/robin/Desktop/Github/RX/build",
+  "command": "/usr/bin/c++ -g -std=gnu++17 -o core/CMakeFiles/neon_core.dir/time.cpp.o -c /home/robin/Desktop/Github/RX/core/time.cpp",
+  "file": "/home/robin/Desktop/Github/RX/core/time.cpp"
+},
+{
+  "directory": "/home/robin/Desktop/Github/RX/build",
+  "command": "/usr/bin/c++ -g -std=gnu++17 -o core/CMakeFiles/neon_core.dir/input.cpp.o -c /home/robin/Desktop/Github/RX/core/input.cpp",
+  "file": "/home/robin/Desktop/Github/RX/core/input.cpp"
+},
+{
+  "directory": "/home/robin/Desktop/Github/RX/build",
+  "command": "/usr/bin/c++ -g -std=gnu++17 -o core/CMakeFiles/neon_core.dir/instance.cpp.o -c /home/robin/Desktop/Github/RX/core/instance.cpp",
+  "file": "/home/robin/Desktop/Github/RX/core/instance.cpp"
+},
+{
+  "directory": "/home/robin/Desktop/Github/RX/build",
+  "command": "/usr/bin/c++ -g -std=gnu++17 -o core/CMakeFiles/neon_core.dir/surface.cpp.o -c /home/robin/Desktop/Github/RX/core/surface.cpp",
+  "file": "/home/robin/Desktop/Github/RX/core/surface.cpp"
+},
+{
+  "directory": "/home/robin/Desktop/Github/RX/build",
+  "command": "/usr/bin/c++ -g -std=gnu++17 -o core/CMakeFiles/neon_core.dir/physicalDevice.cpp.o -c /home/robin/Desktop/Github/RX/core/physicalDevice.cpp",
+  "file": "/home/robin/Desktop/Github/RX/core/physicalDevice.cpp"
+},
+{
+  "directory": "/home/robin/Desktop/Github/RX/build",
+  "command": "/usr/bin/c++ -g -std=gnu++17 -o core/CMakeFiles/neon_core.dir/device.cpp.o -c /home/robin/Desktop/Github/RX/core/device.cpp",
+  "file": "/home/robin/Desktop/Github/RX/core/device.cpp"
+},
+{
+  "directory": "/home/robin/Desktop/Github/RX/build",
+  "command": "/usr/bin/c++ -g -std=gnu++17 -o core/CMakeFiles/neon_core.dir/queue.cpp.o -c /home/robin/Desktop/Github/RX/core/queue.cpp",
+  "file": "/home/robin/Desktop/Github/RX/core/queue.cpp"
+},
+{
+  "directory": "/home/robin/Desktop/Github/RX/build",
+  "command": "/usr/bin/c++ -g -std=gnu++17 -o core/CMakeFiles/neon_core.dir/command.cpp.o -c /home/robin/Desktop/Github/RX/core/command.cpp",
+  "file": "/home/robin/Desktop/Github/RX/core/command.cpp"
+},
+{
+  "directory": "/home/robin/Desktop/Github/RX/build",
+  "command": "/usr/bin/c++ -g -std=gnu++17 -o core/CMakeFiles/neon_core.dir/allocator.cpp.o -c /home/robin/Desktop/Github/RX/core/allocator.cpp",
+  "file": "/home/robin/Desktop/Github/RX/core/allocator.cpp"
+},
+{
+  "directory": "/home/robin/Desktop/Github/RX/build",
+  "command": "/usr/bin/c++ -g -std=gnu++17 -o core/CMakeFiles/neon_core.dir/descriptorPool.cpp.o -c /home/robin/Desktop/Github/RX/core/descriptorPool.cpp",
+  "file": "/home/robin/Desktop/Github/RX/core/descriptorPool.cpp"
+},
+{
+  "directory": "/home/robin/Desktop/Github/RX/build",
+  "command": "/usr/bin/c++ -g -std=gnu++17 -o core/CMakeFiles/neon_core.dir/semaphore.cpp.o -c /home/robin/Desktop/Github/RX/core/semaphore.cpp",
+  "file": "/home/robin/Desktop/Github/RX/core/semaphore.cpp"
+},
+{
+  "directory": "/home/robin/Desktop/Github/RX/build",
+  "command": "/usr/bin/c++ -g -std=gnu++17 -o core/CMakeFiles/neon_core.dir/fence.cpp.o -c /home/robin/Desktop/Github/RX/core/fence.cpp",
+  "file": "/home/robin/Desktop/Github/RX/core/fence.cpp"
+},
+{
+  "directory": "/home/robin/Desktop/Github/RX/build",
+  "command": "/usr/bin/c++ -g -std=gnu++17 -o core/CMakeFiles/neon_core.dir/image.cpp.o -c /home/robin/Desktop/Github/RX/core/image.cpp",
+  "file": "/home/robin/Desktop/Github/RX/core/image.cpp"
+},
+{
+  "directory": "/home/robin/Desktop/Github/RX/build",
+  "command": "/usr/bin/c++ -g -std=gnu++17 -o core/CMakeFiles/neon_core.dir/buffer.cpp.o -c /home/robin/Desktop/Github/RX/core/buffer.cpp",
+  "file": "/home/robin/Desktop/Github/RX/core/buffer.cpp"
+},
+{
+  "directory": "/home/robin/Desktop/Github/RX/build",
+  "command": "/usr/bin/c++ -g -std=gnu++17 -o core/CMakeFiles/neon_core.dir/eye.cpp.o -c /home/robin/Desktop/Github/RX/core/eye.cpp",
+  "file": "/home/robin/Desktop/Github/RX/core/eye.cpp"
+},
+{
+  "directory": "/home/robin/Desktop/Github/RX/build",
+  "command": "/usr/bin/c++ -g -std=gnu++17 -o core/CMakeFiles/neon_core.dir/swapchain.cpp.o -c /home/robin/Desktop/Github/RX/core/swapchain.cpp",
+  "file": "/home/robin/Desktop/Github/RX/core/swapchain.cpp"
+},
+{
+  "directory": "/home/robin/Desktop/Github/RX/build",
+  "command": "/usr/bin/c++ -g -std=gnu++17 -o core/CMakeFiles/neon_core.dir/renderPass.cpp.o -c /home/robin/Desktop/Github/RX/core/renderPass.cpp",
+  "file": "/home/robin/Desktop/Github/RX/core/renderPass.cpp"
+},
+{
+  "directory": "/home/robin/Desktop/Github/RX/build",
+  "command": "/usr/bin/c++ -g -std=gnu++17 -o core/CMakeFiles/neon_core.dir/framebuffers.cpp.o -c /home/robin/Desktop/Github/RX/core/framebuffers.cpp",
+  "file": "/home/robin/Desktop/Github/RX/core/framebuffers.cpp"
+},
+{
+  "directory": "/home/robin/Desktop/Github/RX/build",
+  "command": "/usr/bin/c++ -g -std=gnu++17 -o core/CMakeFiles/neon_core.dir/shader.cpp.o -c /home/robin/Desktop/Github/RX/core/shader.cpp",
+  "file": "/home/robin/Desktop/Github/RX/core/shader.cpp"
+},
+{
+  "directory": "/home/robin/Desktop/Github/RX/build",
+  "command": "/usr/bin/c++ -g -std=gnu++17 -o core/CMakeFiles/neon_core.dir/core.cpp.o -c /home/robin/Desktop/Github/RX/core/core.cpp",
+  "file": "/home/robin/Desktop/Github/RX/core/core.cpp"
+},
+{
+  "directory": "/home/robin/Desktop/Github/RX/build",
+  "command": "/usr/bin/c++ -I/home/robin/Desktop/Github/RX/component/../core -g -std=gnu++17 -o component/CMakeFiles/neon_component.dir/transform.cpp.o -c /home/robin/Desktop/Github/RX/component/transform.cpp",
+  "file": "/home/robin/Desktop/Github/RX/component/transform.cpp"
+},
+{
+  "directory": "/home/robin/Desktop/Github/RX/build",
+  "command": "/usr/bin/c++ -I/home/robin/Desktop/Github/RX/component/../core -g -std=gnu++17 -o component/CMakeFiles/neon_component.dir/colorMesh.cpp.o -c /home/robin/Desktop/Github/RX/component/colorMesh.cpp",
+  "file": "/home/robin/Desktop/Github/RX/component/colorMesh.cpp"
+},
+{
+  "directory": "/home/robin/Desktop/Github/RX/build",
+  "command": "/usr/bin/c++ -I/home/robin/Desktop/Github/RX/component/../core -g -std=gnu++17 -o component/CMakeFiles/neon_component.dir/colorGraphics.cpp.o -c /home/robin/Desktop/Github/RX/component/colorGraphics.cpp",
+  "file": "/home/robin/Desktop/Github/RX/component/colorGraphics.cpp"
+},
+{
+  "directory": "/home/robin/Desktop/Github/RX/build",
+  "command": "/usr/bin/c++ -I/home/robin/Desktop/Github/RX/component/../core -g -std=gnu++17 -o component/CMakeFiles/neon_component.dir/velocity.cpp.o -c /home/robin/Desktop/Github/RX/component/velocity.cpp",
+  "file": "/home/robin/Desktop/Github/RX/component/velocity.cpp"
+},
+{
+  "directory": "/home/robin/Desktop/Github/RX/build",
+  "command": "/usr/bin/c++ -I/home/robin/Desktop/Github/RX/component/../core -g -std=gnu++17 -o component/CMakeFiles/neon_component.dir/mesh.cpp.o -c /home/robin/Desktop/Github/RX/component/mesh.cpp",
+  "file": "/home/robin/Desktop/Github/RX/component/mesh.cpp"
+}
+]

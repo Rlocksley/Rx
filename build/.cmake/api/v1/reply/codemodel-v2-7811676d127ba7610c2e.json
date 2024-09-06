@@ -1,0 +1,138 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1,
+						2
+					],
+					"jsonFile" : "directory-.-Debug-f5ebdc15457944623624.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.10"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0
+					]
+				},
+				{
+					"build" : "core",
+					"jsonFile" : "directory-core-Debug-eac7e466be7743a8be0a.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.16.3"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 1,
+					"source" : "core",
+					"targetIndexes" : 
+					[
+						2
+					]
+				},
+				{
+					"build" : "component",
+					"jsonFile" : "directory-component-Debug-10c134e6d1c711f4d753.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.16.3"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 2,
+					"source" : "component",
+					"targetIndexes" : 
+					[
+						1
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"childIndexes" : 
+					[
+						1,
+						2
+					],
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "Rx_Test",
+					"targetIndexes" : 
+					[
+						0
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						1
+					],
+					"name" : "neon",
+					"parentIndex" : 0,
+					"targetIndexes" : 
+					[
+						2
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						2
+					],
+					"name" : "neon",
+					"parentIndex" : 0,
+					"targetIndexes" : 
+					[
+						1
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "Rx_Test::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-Rx_Test-Debug-99d2bcdea8d84cc987ae.json",
+					"name" : "Rx_Test",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 2,
+					"id" : "neon_component::@fceee1b25ae21d06598b",
+					"jsonFile" : "target-neon_component-Debug-a37c1ffd78f50f3734a7.json",
+					"name" : "neon_component",
+					"projectIndex" : 2
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "neon_core::@57760688d1f824db5d9c",
+					"jsonFile" : "target-neon_core-Debug-125d49fde5d9c0ed834a.json",
+					"name" : "neon_core",
+					"projectIndex" : 1
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/home/robin/Desktop/Github/RX/build",
+		"source" : "/home/robin/Desktop/Github/RX"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 3
+	}
+}
