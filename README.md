@@ -3,7 +3,7 @@ A lightweight C++ game engine and demos built on top of flecs (ECS), Vulkan (ren
 
 Platforms
 - Windows and Linux supported.
-- Build with CMake and vcpkg (install glm, glfw, Vulkan SDK, and Jolt Physics).
+- Build with CMake and vcpkg (install glm, glfw, Vulkan SDK, Assimp, and Jolt Physics).
 
 Quick start
 1. Clone repository: git clone https://github.com/Rlocksley/Rx.git
