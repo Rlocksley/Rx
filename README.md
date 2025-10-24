@@ -16,4 +16,4 @@ What you'll find here
 example 8
 Contributing
 - Issues and PRs welcome. I try to build a Fantasy-RPG.
-- Keep systems modular: rendering, animation, physics, input and gameplay should be decoupled via ECS systems.
+- Keep systems modular: rendering, animation, physics, and gameplay should be decoupled via ECS systems.
