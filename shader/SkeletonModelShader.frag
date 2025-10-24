@@ -43,11 +43,26 @@ layout(binding = 2) uniform DirectionalLightBuffer{
     DirectionalLight lights[256];
 }directionalLightBuffer;
 
-layout(std430, binding = 4) buffer MaterialBuffer {
+struct ShadowSpotLight {
+    vec4 position;
+    vec4 direction;
+    vec4 color;
+    vec4 intensity;
+    mat4 lightSpaceMatrix;
+};
+layout(binding = 3) uniform ShadowSpotLightBuffer {
+    ivec4 numberShadowSpotLights;
+    ShadowSpotLight lights[16];
+} shadowSpotLightBuffer;
+
+layout(binding = 4) uniform sampler2DArrayShadow shadowMapArray;
+
+
+layout(std430, binding = 6) buffer MaterialBuffer {
     Material materials[];
 };
 
-layout(binding = 6) uniform sampler2D TextureArray[];
+layout(binding = 8) uniform sampler2D TextureArray[];
 
 // ----- INPUTS FROM VERTEX SHADER -----
 // These are interpolated for each fragment.
@@ -56,6 +71,7 @@ layout(location = 0) in vec3 fragPosition;
 layout(location = 1) in vec3 fragNormal;
 layout(location = 2) in vec2 texCoords;
 layout(location = 3) in flat int glDrawID;
+layout(location = 4) in vec4 inFragPosLightSpace[16];
 
 // ----- OUTPUT -----
 
@@ -105,6 +121,78 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
 vec3 fresnelSchlick(float cosTheta, vec3 F0)
 {
     return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
+const float SHADOW_BIAS_MIN = 0.00005;
+const float SHADOW_BIAS_SLOPE = 0.0005;
+const float SHADOW_FILTER_RADIUS = 2.5;
+
+// Precomputed Poisson disk offsets for rotated PCF sampling
+const vec2 POISSON_DISK[8] = vec2[](
+    vec2(-0.613392,  0.617481),
+    vec2( 0.170019, -0.040254),
+    vec2(-0.299417, -0.792901),
+    vec2( 0.645680, -0.530998),
+    vec2( 0.454148,  0.516511),
+    vec2(-0.507431,  0.281182),
+    vec2(-0.177186, -0.283153),
+    vec2( 0.100558,  0.765839)
+);
+
+// Hash function to generate a reproducible pseudo-random angle per-fragment
+float hash(vec2 p)
+{
+    const vec2 k = vec2(127.1, 311.7);
+    float h = dot(p, k);
+    return fract(sin(h) * 43758.5453123);
+}
+
+mat2 rotation(float angle)
+{
+    float s = sin(angle);
+    float c = cos(angle);
+    return mat2(c, -s, s, c);
+}
+
+// Calculate shadow factor for a single shadow spot light using PCF
+// Returns 1.0 if fully lit, 0.0 if fully in shadow
+float calculateShadow(int lightIndex, vec3 normal, vec3 lightDir) {
+    vec4 fragPosLight = inFragPosLightSpace[lightIndex];
+    
+    // Perform perspective divide
+    vec3 projCoords = fragPosLight.xyz / fragPosLight.w;
+    
+    // Transform to [0,1] range for texture sampling
+    projCoords.xy = projCoords.xy * 0.5 + 0.5;
+    
+    // If outside shadow map frustum, assume lit
+    if (projCoords.x < 0.0 || projCoords.x > 1.0 || 
+        projCoords.y < 0.0 || projCoords.y > 1.0 ||
+        projCoords.z > 1.0) {
+        return 0.0;
+    }
+    
+    // Adaptive bias based on surface angle
+    
+    float ndotl = max(dot(normal, lightDir), 0.0);
+    float receiver = clamp(projCoords.z, 0.0, 1.0);
+    float bias = SHADOW_BIAS_MIN + SHADOW_BIAS_SLOPE * (1.0 - ndotl) * receiver;
+    
+    // Percentage-closer filtering with rotated Poisson disk sampling
+    vec2 texelSize = 1.0 / vec2(textureSize(shadowMapArray, 0).xy);
+    float depth = projCoords.z - bias;
+    float radius = SHADOW_FILTER_RADIUS * (0.5 + receiver) * texelSize.x;
+
+    float angle = hash(fragPosition.xy) * 6.28318530718;
+    mat2 rot = rotation(angle);
+
+    float visibility = 0.0;
+    for (int i = 0; i < 8; ++i) {
+        vec2 offset = rot * POISSON_DISK[i] * radius;
+        visibility += texture(shadowMapArray, vec4(projCoords.xy + offset, float(lightIndex), depth));
+    }
+
+    return visibility / 8.0;
 }
 
 
@@ -209,20 +297,44 @@ void main()
         Lo += (kD * baseColor / PI + specular) * radiance * NdotL;
     }
 
-    // --- 5. Ambient and Emissive Light ---
-    // A simple ambient term to lift the shadows.
-    // For a full PBR pipeline, this would be replaced by Image-Based Lighting (IBL)
-    // from a pre-convoluted environment map.
+    // --- Shadow Spot Lights Loop (with PBR + Shadows) ---
+    for (int i = 0; i < int(shadowSpotLightBuffer.numberShadowSpotLights.x) && i < 16; ++i)
+    {
+        vec3 lightVec = shadowSpotLightBuffer.lights[i].position.xyz - fragPosition;
+        float distance = length(lightVec);
+        vec3 L = normalize(lightVec); // Vector to the light
+        vec3 H = normalize(V + L);
 
-     // Distance-based mix to reduce far-plane flicker
-    float viewDist    = length(eye.position.xyz - fragPosition);
-    float fadeFactor  = clamp((viewDist - 10000.0)
-                             / (20000.0 - 10000.0),
-                              0.0, 1.0);
-    vec3  mixedLo     = mix(Lo, baseColor, fadeFactor);
+        // Attenuation (inverse square law)
+        float attenuation = 1.0 / (distance * distance);
 
-    vec3 ambient = vec3(0.03) * baseColor;
-    vec3 color = ambient + mixedLo + emissive;
+        // Calculate shadow factor (1.0 = lit, 0.0 = shadowed)
+        float shadowFactor = calculateShadow(i, N, L);
+
+        // Calculate radiance
+        vec3 radiance = shadowSpotLightBuffer.lights[i].color.rgb * 
+                        shadowSpotLightBuffer.lights[i].intensity.x * 
+                        attenuation * shadowFactor; // Apply shadow
+
+        // Cook-Torrance BRDF
+        float NDF = DistributionGGX(N, H, roughness);
+        float G   = GeometrySmith(N, V, L, roughness);
+        vec3  F   = fresnelSchlick(max(dot(H, V), 0.0), F0);
+        
+        vec3 kS = F;
+        vec3 kD = vec3(1.0) - kS;
+        kD *= (1.0 - metallic);
+
+        vec3 numerator   = NDF * G * F;
+        float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + EPSILON;
+        vec3 specular    = numerator / denominator;
+
+        float NdotL = max(dot(N, L), 0.0);
+        Lo += (kD * baseColor / PI + specular) * radiance * NdotL;
+    }
+
+    vec3 ambient = vec3(0.001) * baseColor;
+    vec3 color = ambient + Lo + emissive;
 
     // --- 6. Post-Processing: HDR to LDR ---
     // Reinhard Tonemapping

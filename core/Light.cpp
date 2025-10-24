@@ -18,9 +18,15 @@ namespace Rx{
             createBufferInterface
             (1, sizeof(SpotLightBuffer),
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+
+            shadowSpotLightBuffer =
+            createBufferInterface
+            (1, sizeof(ShadowSpotLightBuffer),
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
         }
 
         void destroyLightBuffers(){
+            destroyBufferInterface(shadowSpotLightBuffer);
             destroyBufferInterface(pointLightBuffer);
             destroyBufferInterface(directionalLightBuffer);
             destroyBufferInterface(spotLightBuffer);

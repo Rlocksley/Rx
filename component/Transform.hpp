@@ -89,10 +89,52 @@ namespace Rx
                 return transform;
             }
 
+            static Transform lookAt(const glm::vec3& position, const glm::vec3& target, const glm::vec3& up = glm::vec3(0, 1, 0))
+            {
+                Transform transform;
+                transform.translation = position;
+                transform.scale = glm::vec3(1.0f);
+
+                // Calculate forward direction (from position to target)
+                glm::vec3 forward = glm::normalize(target - position);
+                
+                // Calculate right direction (perpendicular to up and forward) — matches Eye.cpp
+                glm::vec3 right = glm::normalize(glm::cross(up, forward));
+                
+                // Recalculate up direction (perpendicular to right and forward)
+                glm::vec3 correctedUp = glm::normalize(glm::cross(right, forward));
+
+                // Build rotation matrix (note: forward is typically -Z in camera space)
+                glm::mat3 rotMat;
+                rotMat[0] = right;           // X axis
+                rotMat[1] = correctedUp;     // Y axis
+                rotMat[2] = -forward;        // Z axis (negated for right-handed coordinates)
+
+                // Convert rotation matrix to quaternion
+                glm::quat q = glm::quat_cast(rotMat);
+
+                // Extract angle/axis representation
+                transform.angle = glm::angle(q);
+                transform.axis = glm::axis(q);
+
+                // Fallback axis if angle is near zero
+                if (glm::length(transform.axis) < glm::epsilon<float>()) {
+                    transform.axis = glm::vec3(0.0f, 1.0f, 0.0f);
+                }
+
+                return transform;
+            }
+
             glm::vec3 forward() const
             {
                 glm::quat q = toRotation();
                 return q * glm::vec3(0, 0, -1);
+            }
+
+            glm::vec3 up() const
+            {
+                glm::quat q = toRotation();
+                return q * glm::vec3(0, 1, 0);
             }
         };
     }

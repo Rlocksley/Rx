@@ -17,12 +17,14 @@ FlyingCamera.hpp
 FlyingCamera.cpp
 Velocity.hpp
 Velocity.cpp
-MeshArray.hpp
-MeshArray.cpp
-ColorArrayGraphics.hpp
-ColorArrayGraphics.cpp
 ColorMeshArray.hpp
 ColorMeshArray.cpp
+VkColorModelArrayDescriptorSet.hpp
+VkColorModelArrayDescriptorSet.cpp
+VkShadowColorModelArrayDescriptorSet.hpp
+VkShadowColorModelArrayDescriptorSet.cpp
+VkColorMeshArray.hpp
+VkColorMeshArray.cpp
 VkInstancedColorModelBuffer.hpp
 VkInstancedColorModelBuffer.cpp
 VkIndirectBuffer.hpp
@@ -43,6 +45,8 @@ VkTextureMaterialBuffer.hpp
 VkTextureMaterialBuffer.cpp
 VkTextureModelDescriptorSet.hpp
 VkTextureModelDescriptorSet.cpp
+VkShadowTextureModelDescriptorSet.hpp
+VkShadowTextureModelDescriptorSet.cpp
 AnimationBone.hpp
 AnimationBone.cpp
 AnimationClip.hpp
@@ -57,6 +61,8 @@ VkSkeletonArrayBuffer.hpp
 VkSkeletonArrayBuffer.cpp
 VkSkeletonModelDescriptorSet.hpp
 VkSkeletonModelDescriptorSet.cpp
+VkShadowSkeletonModelDescriptorSet.hpp
+VkShadowSkeletonModelDescriptorSet.cpp
 KeyFrameBuffer.hpp
 KeyFrameBuffer.cpp
 Skeleton.hpp
@@ -73,6 +79,10 @@ CharacterController.hpp
 CharacterController.cpp
 CharacterCamera.hpp
 CharacterCamera.cpp
+ShadowSpotLight.hpp
+ShadowSpotLight.cpp
+VkShadowColorModelDescriptorSet.hpp
+VkShadowColorModelDescriptorSet.cpp
 )
 
 target_include_directories(rx_component PUBLIC ../core ../flecs)

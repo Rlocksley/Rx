@@ -38,6 +38,7 @@ namespace Rx{
         flecs::entity onRecordBegin;
         flecs::entity onRecordBarrier1;
         flecs::entity onRecordComp;
+        flecs::entity onRecordShadow;
         flecs::entity onRecordRenderPassBegin;
         flecs::entity onRecordBarrier2;
         flecs::entity onRecordRender;

@@ -10,7 +10,6 @@ namespace Rx
         {
             VkCommandPool vkCommandPool;
             VkCommandBuffer vkCommandBuffer;
-            VkSemaphore vkSemaphore;
             VkFence vkFence;
         };
 
@@ -22,9 +21,7 @@ namespace Rx
         };
 
         inline Rx::Core::SingleCommand singleCommand;
-        inline Rx::Core::Command command[2];
-
-        inline int commandIndex{0};
+        inline Rx::Core::Command command;
 
         Command createCommand();
         void destroyCommand(Command command);

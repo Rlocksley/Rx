@@ -1,7 +1,6 @@
 #include "Command.hpp"
 #include "PhysicalDevice.hpp"
 #include "Device.hpp"
-#include "Semaphore.hpp"
 #include "Fence.hpp"
 #include "Mutex.hpp"
 namespace Rx
@@ -41,8 +40,6 @@ namespace Rx
             "createCommand",
             "vkAllocateCommandBuffers")
 
-            command.vkSemaphore = createSemaphore();
-
             command.vkFence = createFence(VK_FENCE_CREATE_SIGNALED_BIT);
 
             return command;
@@ -51,8 +48,6 @@ namespace Rx
         void destroyCommand(Command command)
         {
             destroyFence(command.vkFence);
-
-            destroySemaphore(command.vkSemaphore);
 
             vkFreeCommandBuffers
             (vkDevice,

@@ -6,9 +6,9 @@
 #include "MeshArray.hpp"
 #include "Transform.hpp"
 #include "VkIndirectBuffer.hpp"
-#include "ColorMeshArray.hpp"
+#include "VkColorMeshArray.hpp"
 #include "VkInstancedColorModelBuffer.hpp"
-#include "ColorArrayGraphics.hpp"
+#include "VkColorModelArrayDescriptorSet.hpp"
 #include "Material.hpp"
 #include "ColorMesh.hpp"
 #include "VkColorMesh.hpp"
@@ -105,14 +105,14 @@ struct Actors {
         // --- Set up Batch Rendering Entity ---
 
         auto batchRenderEntity = world.entity("BatchRender");
-        Rx::Component::MeshArray meshArray;
+        Rx::Component::ColorMeshArray meshArray;
         meshArray.addMesh("Grass", grassVertices, cubeIndices);
         meshArray.addMesh("Dirt", dirtVertices, cubeIndices);
         meshArray.addMesh("Trunk", trunkVertices, cubeIndices);
         meshArray.addMesh("Leaves", leavesVertices, cubeIndices);
         //batchRenderEntity.add<LevelAsset>();
-        batchRenderEntity.set<Rx::Component::MeshArray>(meshArray);
-        batchRenderEntity.add<Rx::Component::ColorMeshArray>();
+        batchRenderEntity.set<Rx::Component::ColorMeshArray>(meshArray);
+        batchRenderEntity.add<Rx::Component::VkColorMeshArray>();
 
         Rx::Component::VkIndirectBuffer indirectBuffer;
         indirectBuffer.maxNumberCommands = 1000000;
@@ -123,10 +123,10 @@ struct Actors {
         colorMeshInstanceBuffer.maxNumberInstances = 1000000;
         batchRenderEntity.set<Rx::Component::VkInstancedColorModelBuffer>(colorMeshInstanceBuffer);
 
-        batchRenderEntity.add<Rx::Component::ColorArrayGraphics>();
+        batchRenderEntity.add<Rx::Component::VkColorModelArrayDescriptorSet>();
 
         auto rel = world.lookup("ColorMeshArrayInstanceRelation");
-        const auto& commands = batchRenderEntity.get<Rx::Component::MeshArray>().meshNameToCommand;
+        const auto& commands = batchRenderEntity.get<Rx::Component::ColorMeshArray>().meshNameToCommand;
 
 
         

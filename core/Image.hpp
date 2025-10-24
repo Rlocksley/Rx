@@ -55,5 +55,22 @@ namespace Rx
         Texture createTexture(uint32_t width, uint32_t height, void* pixels);
         void destroyTexture(Texture& texture);
 
+
+        struct ShadowMapArray{
+            uint32_t width;
+            uint32_t height;
+            uint32_t count;
+            VkImage vkImage;
+            VmaAllocation vmaAllocation;
+            VmaAllocationInfo vmaAllocationInfo;
+            VkImageView vkImageView;
+            VkSampler vkSampler;
+            VkFormat format;
+        };
+
+        inline ShadowMapArray shadowMapArray;
+
+        void createShadowMapArray(uint32_t width, uint32_t height, uint32_t count, VkFormat format);
+        void destroyShadowMapArray();
     }
 }

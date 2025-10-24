@@ -38,7 +38,7 @@ namespace Rx{
             "VkSkeletonModelDescriptorSet::createDescriptorSet",
             "vkAllocateDescriptorSets"))
 
-            std::vector<VkDescriptorBufferInfo> bufferInfo(6);
+            std::vector<VkDescriptorBufferInfo> bufferInfo(7);
             bufferInfo[0].buffer = Core::eye.vkBuffer;
             bufferInfo[0].offset = 0;
             bufferInfo[0].range = sizeof(Core::Eye);
@@ -48,16 +48,24 @@ namespace Rx{
             bufferInfo[2].buffer = Core::directionalLightBuffer.vkBuffer;
             bufferInfo[2].offset = 0;
             bufferInfo[2].range = sizeof(Core::DirectionalLightBuffer);
-            bufferInfo[3].buffer = transformBuffer.buffer.vkBuffer;
+            bufferInfo[3].buffer = Core::shadowSpotLightBuffer.vkBuffer;
             bufferInfo[3].offset = 0;
-            bufferInfo[3].range = sizeof(TransformInstance) * transformBuffer.maxNumberTransforms;
-            bufferInfo[4].buffer = textureMaterialBuffer.buffer.vkBuffer;
+            bufferInfo[3].range = sizeof(Core::ShadowSpotLightBuffer);
+            bufferInfo[4].buffer = transformBuffer.buffer.vkBuffer;
             bufferInfo[4].offset = 0;
-            bufferInfo[4].range = sizeof(TextureMaterial) * textureMaterialBuffer.maxNumberMaterials;
-            bufferInfo[5].buffer = skeletonArrayBuffer.buffer.vkBuffer;
+            bufferInfo[4].range = sizeof(TransformInstance) * transformBuffer.maxNumberTransforms;
+            bufferInfo[5].buffer = textureMaterialBuffer.buffer.vkBuffer;
             bufferInfo[5].offset = 0;
-            bufferInfo[5].range = sizeof(NodeTransform) * skeletonArrayBuffer.maxNumberSkeletons * 256; // Assuming max 256 mat4 bones per skeleton
+            bufferInfo[5].range = sizeof(TextureMaterial) * textureMaterialBuffer.maxNumberMaterials;
+            bufferInfo[6].buffer = skeletonArrayBuffer.buffer.vkBuffer;
+            bufferInfo[6].offset = 0;
+            bufferInfo[6].range = sizeof(NodeTransform) * skeletonArrayBuffer.maxNumberSkeletons * 256; // Assuming max 256 mat4 bones per skeleton
 
+            VkDescriptorImageInfo shadowMapInfo{};
+            shadowMapInfo.sampler = Core::shadowMapArray.vkSampler;
+            shadowMapInfo.imageView = Core::shadowMapArray.vkImageView;
+            shadowMapInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            
             std::vector<VkDescriptorImageInfo> imageInfos(textureArray.textures.size());
             for (size_t i = 0; i < textureArray.textures.size(); i++) {
                 imageInfos[i].sampler = textureArray.textures[i].vkSampler;
@@ -65,7 +73,7 @@ namespace Rx{
                 imageInfos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             }
             
-            std::vector<VkWriteDescriptorSet> writeSet(7);
+            std::vector<VkWriteDescriptorSet> writeSet(9);
             writeSet[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             writeSet[0].dstSet = vkDescriptorSet;
             writeSet[0].dstBinding = 0;
@@ -96,24 +104,26 @@ namespace Rx{
             writeSet[2].pImageInfo = nullptr;
             writeSet[2].pTexelBufferView = nullptr;
             writeSet[2].pNext = nullptr;
+            // Binding 3: ShadowSpotLightBuffer (UBO)
             writeSet[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             writeSet[3].dstSet = vkDescriptorSet;
             writeSet[3].dstBinding = 3;
             writeSet[3].dstArrayElement = 0;
-            writeSet[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            writeSet[3].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             writeSet[3].descriptorCount = 1;
             writeSet[3].pBufferInfo = &bufferInfo[3];
             writeSet[3].pImageInfo = nullptr;
             writeSet[3].pTexelBufferView = nullptr;
             writeSet[3].pNext = nullptr;
+               // Binding 4: ShadowMapArray (Combined Image Sampler)
             writeSet[4].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             writeSet[4].dstSet = vkDescriptorSet;
             writeSet[4].dstBinding = 4;
             writeSet[4].dstArrayElement = 0;
-            writeSet[4].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            writeSet[4].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             writeSet[4].descriptorCount = 1;
-            writeSet[4].pBufferInfo = &bufferInfo[4];
-            writeSet[4].pImageInfo = nullptr;
+            writeSet[4].pBufferInfo = nullptr;
+            writeSet[4].pImageInfo = &shadowMapInfo;
             writeSet[4].pTexelBufferView = nullptr;
             writeSet[4].pNext = nullptr;
             writeSet[5].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -122,7 +132,7 @@ namespace Rx{
             writeSet[5].dstArrayElement = 0;
             writeSet[5].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
             writeSet[5].descriptorCount = 1;
-            writeSet[5].pBufferInfo = &bufferInfo[5];
+            writeSet[5].pBufferInfo = &bufferInfo[4];
             writeSet[5].pImageInfo = nullptr;
             writeSet[5].pTexelBufferView = nullptr;
             writeSet[5].pNext = nullptr;
@@ -130,12 +140,32 @@ namespace Rx{
             writeSet[6].dstSet = vkDescriptorSet;
             writeSet[6].dstBinding = 6;
             writeSet[6].dstArrayElement = 0;
-            writeSet[6].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            writeSet[6].descriptorCount = static_cast<uint32_t>(imageInfos.size());
-            writeSet[6].pBufferInfo = nullptr;
-            writeSet[6].pImageInfo = imageInfos.data();
+            writeSet[6].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            writeSet[6].descriptorCount = 1;
+            writeSet[6].pBufferInfo = &bufferInfo[5];
+            writeSet[6].pImageInfo = nullptr;
             writeSet[6].pTexelBufferView = nullptr;
             writeSet[6].pNext = nullptr;
+            writeSet[7].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            writeSet[7].dstSet = vkDescriptorSet;
+            writeSet[7].dstBinding = 7;
+            writeSet[7].dstArrayElement = 0;
+            writeSet[7].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            writeSet[7].descriptorCount = 1;
+            writeSet[7].pBufferInfo = &bufferInfo[6];
+            writeSet[7].pImageInfo = nullptr;
+            writeSet[7].pTexelBufferView = nullptr;
+            writeSet[7].pNext = nullptr;
+            writeSet[8].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            writeSet[8].dstSet = vkDescriptorSet;
+            writeSet[8].dstBinding = 8;
+            writeSet[8].dstArrayElement = 0;
+            writeSet[8].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            writeSet[8].descriptorCount = static_cast<uint32_t>(imageInfos.size());
+            writeSet[8].pBufferInfo = nullptr;
+            writeSet[8].pImageInfo = imageInfos.data();
+            writeSet[8].pTexelBufferView = nullptr;
+            writeSet[8].pNext = nullptr;
             
             RX_VK_MUTEX(
             vkUpdateDescriptorSets

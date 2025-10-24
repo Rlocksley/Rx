@@ -6,6 +6,7 @@
 #include "Vertex.hpp"
 #include "PhysicalDevice.hpp"
 #include "RenderPass.hpp"
+#include "Image.hpp"
 
 namespace Rx
 {
@@ -15,18 +16,26 @@ namespace Rx
         {
             createColorMeshPipeline();
             createColorMeshArrayPipeline();
-            createInstancedColorMeshPipeline();
+            //createInstancedColorMeshPipeline();
             createTextureModelPipeline();
             createSkeletonModelPipeline();
             createSkeletonModelCompPipeline();
+            createShadowColorMeshPipeline();
+            createShadowColorModelArrayPipeline();
+            createShadowTextureModelPipeline();
+            createShadowSkeletonModelPipeline();
         }
 
         void destroyPipelines()
         {
+            destroyShadowSkeletonModelPipeline();
+            destroyShadowTextureModelPipeline();
+            destroyShadowColorModelArrayPipeline();
+            destroyShadowColorMeshPipeline();
             destroySkeletonModelCompPipeline();
             destroySkeletonModelPipeline();
             destroyTextureModelPipeline();
-            destroyInstancedColorMeshPipeline();
+            //destroyInstancedColorMeshPipeline();
             destroyColorMeshArrayPipeline();
             destroyColorMeshPipeline();
         }
@@ -939,5 +948,604 @@ namespace Rx
             )
         }
 
+
+        void createShadowColorMeshPipeline(){
+
+            for(uint32_t i = 0; i < 16; i++){
+                // Shader stage: vertex only (no fragment shader for depth-only pass)
+                VkPipelineShaderStageCreateInfo vertexStageInfo{};
+                vertexStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+                vertexStageInfo.flags = 0;
+                vertexStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+                vertexStageInfo.module = shadowColorMeshVertexShader.createShaderModule();
+                vertexStageInfo.pName = "main";
+                vertexStageInfo.pSpecializationInfo = nullptr;
+                vertexStageInfo.pNext = nullptr;
+
+                // Vertex input: only position from Vertex::Color
+                VkVertexInputBindingDescription vertexBindingDescr{};
+                vertexBindingDescr.binding = 0;
+                vertexBindingDescr.stride = sizeof(Vertex::Color);
+                vertexBindingDescr.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+                VkVertexInputAttributeDescription vertexAttributeDescr{};
+                vertexAttributeDescr.binding = 0;
+                vertexAttributeDescr.location = 0;
+                vertexAttributeDescr.format = VK_FORMAT_R32G32B32_SFLOAT;
+                vertexAttributeDescr.offset = offsetof(Vertex::Color, position);
+
+                VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo{};
+                vertexInputStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+                vertexInputStateCreateInfo.vertexBindingDescriptionCount = 1;
+                vertexInputStateCreateInfo.pVertexBindingDescriptions = &vertexBindingDescr;
+                vertexInputStateCreateInfo.vertexAttributeDescriptionCount = 1;
+                vertexInputStateCreateInfo.pVertexAttributeDescriptions = &vertexAttributeDescr;
+
+                VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo{};
+                inputAssemblyStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+                inputAssemblyStateCreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+                inputAssemblyStateCreateInfo.primitiveRestartEnable = VK_FALSE;
+
+                // Viewport/scissor (will be set dynamically or use shadow map dimensions)
+                VkViewport viewport{};
+                viewport.x = 0.f;
+                viewport.y = 0.f;
+                viewport.width = static_cast<float>(Core::shadowMapArray.width);
+                viewport.height = static_cast<float>(Core::shadowMapArray.height);
+                viewport.minDepth = 0.f;
+                viewport.maxDepth = 1.f;
+
+                VkRect2D scissor{};
+                scissor.offset = {0, 0};
+                scissor.extent = {Core::shadowMapArray.width, Core::shadowMapArray.height};
+
+                VkPipelineViewportStateCreateInfo viewportStateCreateInfo{};
+                viewportStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+                viewportStateCreateInfo.viewportCount = 1;
+                viewportStateCreateInfo.pViewports = &viewport;
+                viewportStateCreateInfo.scissorCount = 1;
+                viewportStateCreateInfo.pScissors = &scissor;
+
+                VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo{};
+                rasterizationStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+                rasterizationStateCreateInfo.depthClampEnable = VK_FALSE;
+                rasterizationStateCreateInfo.rasterizerDiscardEnable = VK_FALSE;
+                rasterizationStateCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
+                rasterizationStateCreateInfo.lineWidth = 1.f;
+                rasterizationStateCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+                rasterizationStateCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
+                rasterizationStateCreateInfo.depthBiasEnable = VK_TRUE; // Enable depth bias for shadow acne
+                rasterizationStateCreateInfo.depthBiasConstantFactor = 1.25f;
+                rasterizationStateCreateInfo.depthBiasClamp = 0.f;
+                rasterizationStateCreateInfo.depthBiasSlopeFactor = 1.75f;
+
+                VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo{};
+                multisampleStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+                multisampleStateCreateInfo.sampleShadingEnable = VK_FALSE;
+                multisampleStateCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT; // Shadow maps are typically single-sampled
+                multisampleStateCreateInfo.minSampleShading = 1.f;
+                multisampleStateCreateInfo.pSampleMask = nullptr;
+                multisampleStateCreateInfo.alphaToCoverageEnable = VK_FALSE;
+                multisampleStateCreateInfo.alphaToOneEnable = VK_FALSE;
+
+                VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo{};
+                depthStencilStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+                depthStencilStateCreateInfo.depthTestEnable = VK_TRUE;
+                depthStencilStateCreateInfo.depthWriteEnable = VK_TRUE;
+                depthStencilStateCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+                depthStencilStateCreateInfo.depthBoundsTestEnable = VK_FALSE;
+                depthStencilStateCreateInfo.minDepthBounds = 0.f;
+                depthStencilStateCreateInfo.maxDepthBounds = 1.f;
+                depthStencilStateCreateInfo.stencilTestEnable = VK_FALSE;
+
+                // Dynamic rendering info (for VK_KHR_dynamic_rendering)
+                VkPipelineRenderingCreateInfo renderingInfo{};
+                renderingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+                renderingInfo.colorAttachmentCount = 0; // Depth-only pass
+                renderingInfo.pColorAttachmentFormats = nullptr;
+                renderingInfo.depthAttachmentFormat = Core::shadowMapArray.format; // Use shadow map format (e.g., VK_FORMAT_D32_SFLOAT)
+                renderingInfo.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
+                renderingInfo.viewMask = (1u << i+1) - 1u; // Multiview: enable all layers
+
+                
+                VkGraphicsPipelineCreateInfo createInfo{};
+                createInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+                createInfo.pNext = &renderingInfo; // Chain dynamic rendering info
+                createInfo.stageCount = 1; // Vertex stage only
+                createInfo.pStages = &vertexStageInfo;
+                createInfo.pVertexInputState = &vertexInputStateCreateInfo;
+                createInfo.pInputAssemblyState = &inputAssemblyStateCreateInfo;
+                createInfo.pTessellationState = nullptr;
+                createInfo.pViewportState = &viewportStateCreateInfo;
+                createInfo.pRasterizationState = &rasterizationStateCreateInfo;
+                createInfo.pMultisampleState = &multisampleStateCreateInfo;
+                createInfo.pDepthStencilState = &depthStencilStateCreateInfo;
+                createInfo.pColorBlendState = nullptr; // No color attachments
+                createInfo.pDynamicState = nullptr;
+                createInfo.layout = shadowColorMeshPipelineLayout;
+                createInfo.renderPass = VK_NULL_HANDLE; // Dynamic rendering: no render pass
+                createInfo.subpass = 0;
+                createInfo.basePipelineHandle = VK_NULL_HANDLE;
+                createInfo.basePipelineIndex = -1;
+
+                RX_VK_MUTEX(
+                RX_CHECK_VULKAN(
+                    vkCreateGraphicsPipelines(
+                        Core::vkDevice,
+                        VK_NULL_HANDLE,
+                        1,
+                        &createInfo,
+                        nullptr,
+                        &shadowColorMeshPipeline[i]),
+                    "createShadowColorMeshPipeline",
+                    "vkCreateGraphicsPipelines"));
+
+                RX_VK_MUTEX(
+                    vkDestroyShaderModule(Core::vkDevice, vertexStageInfo.module, nullptr);
+                )
+            }
+        
+        }
+
+        void destroyShadowColorMeshPipeline(){
+            RX_VK_MUTEX(
+                for (size_t i = 0; i < 16; ++i) {
+                    vkDestroyPipeline(vkDevice, shadowColorMeshPipeline[i], nullptr);
+                }
+            )
+        }
+
+
+        void createShadowColorModelArrayPipeline(){
+            for(int i = 0; i < 16; i++){
+                // Shader stage: vertex only (no fragment shader for depth-only pass)
+                VkPipelineShaderStageCreateInfo vertexStageInfo{};
+                vertexStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+                vertexStageInfo.flags = 0;
+                vertexStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+                vertexStageInfo.module = shadowColorModelArrayVertexShader.createShaderModule();
+                vertexStageInfo.pName = "main";
+                vertexStageInfo.pSpecializationInfo = nullptr;
+                vertexStageInfo.pNext = nullptr;
+
+                // Vertex input: only position from Vertex::Color
+                VkVertexInputBindingDescription vertexBindingDescr{};
+                vertexBindingDescr.binding = 0;
+                vertexBindingDescr.stride = sizeof(Vertex::Color);
+                vertexBindingDescr.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+                VkVertexInputAttributeDescription vertexAttributeDescr{};
+                vertexAttributeDescr.binding = 0;
+                vertexAttributeDescr.location = 0;
+                vertexAttributeDescr.format = VK_FORMAT_R32G32B32_SFLOAT;
+                vertexAttributeDescr.offset = offsetof(Vertex::Color, position);
+
+                VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo{};
+                vertexInputStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+                vertexInputStateCreateInfo.vertexBindingDescriptionCount = 1;
+                vertexInputStateCreateInfo.pVertexBindingDescriptions = &vertexBindingDescr;
+                vertexInputStateCreateInfo.vertexAttributeDescriptionCount = 1;
+                vertexInputStateCreateInfo.pVertexAttributeDescriptions = &vertexAttributeDescr;
+
+                VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo{};
+                inputAssemblyStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+                inputAssemblyStateCreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+                inputAssemblyStateCreateInfo.primitiveRestartEnable = VK_FALSE;
+
+                // Viewport/scissor (will be set dynamically or use shadow map dimensions)
+                VkViewport viewport{};
+                viewport.x = 0.f;
+                viewport.y = 0.f;
+                viewport.width = static_cast<float>(Core::shadowMapArray.width);
+                viewport.height = static_cast<float>(Core::shadowMapArray.height);
+                viewport.minDepth = 0.f;
+                viewport.maxDepth = 1.f;
+
+                VkRect2D scissor{};
+                scissor.offset = {0, 0};
+                scissor.extent = {Core::shadowMapArray.width, Core::shadowMapArray.height};
+
+                VkPipelineViewportStateCreateInfo viewportStateCreateInfo{};
+                viewportStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+                viewportStateCreateInfo.viewportCount = 1;
+                viewportStateCreateInfo.pViewports = &viewport;
+                viewportStateCreateInfo.scissorCount = 1;
+                viewportStateCreateInfo.pScissors = &scissor;
+
+                VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo{};
+                rasterizationStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+                rasterizationStateCreateInfo.depthClampEnable = VK_FALSE;
+                rasterizationStateCreateInfo.rasterizerDiscardEnable = VK_FALSE;
+                rasterizationStateCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
+                rasterizationStateCreateInfo.lineWidth = 1.f;
+                rasterizationStateCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+                rasterizationStateCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
+                rasterizationStateCreateInfo.depthBiasEnable = VK_TRUE; // Enable depth bias for shadow acne
+                rasterizationStateCreateInfo.depthBiasConstantFactor = 1.25f;
+                rasterizationStateCreateInfo.depthBiasClamp = 0.f;
+                rasterizationStateCreateInfo.depthBiasSlopeFactor = 1.75f;
+
+                VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo{};
+                multisampleStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+                multisampleStateCreateInfo.sampleShadingEnable = VK_FALSE;
+                multisampleStateCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT; // Shadow maps are typically single-sampled
+                multisampleStateCreateInfo.minSampleShading = 1.f;
+                multisampleStateCreateInfo.pSampleMask = nullptr;
+                multisampleStateCreateInfo.alphaToCoverageEnable = VK_FALSE;
+                multisampleStateCreateInfo.alphaToOneEnable = VK_FALSE;
+
+                VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo{};
+                depthStencilStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+                depthStencilStateCreateInfo.depthTestEnable = VK_TRUE;
+                depthStencilStateCreateInfo.depthWriteEnable = VK_TRUE;
+                depthStencilStateCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+                depthStencilStateCreateInfo.depthBoundsTestEnable = VK_FALSE;
+                depthStencilStateCreateInfo.minDepthBounds = 0.f;
+                depthStencilStateCreateInfo.maxDepthBounds = 1.f;
+                depthStencilStateCreateInfo.stencilTestEnable = VK_FALSE;
+
+                // Dynamic rendering info (for VK_KHR_dynamic_rendering)
+                VkPipelineRenderingCreateInfo renderingInfo{};
+                renderingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+                renderingInfo.colorAttachmentCount = 0; // Depth-only pass
+                renderingInfo.pColorAttachmentFormats = nullptr;
+                renderingInfo.depthAttachmentFormat = Core::shadowMapArray.format; // Use shadow map format (e.g., VK_FORMAT_D32_SFLOAT)
+                renderingInfo.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
+                renderingInfo.viewMask = (1u << i+1) - 1u; // Multiview: enable all layers
+
+                
+                VkGraphicsPipelineCreateInfo createInfo{};
+                createInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+                createInfo.pNext = &renderingInfo; // Chain dynamic rendering info
+                createInfo.stageCount = 1; // Vertex stage only
+                createInfo.pStages = &vertexStageInfo;
+                createInfo.pVertexInputState = &vertexInputStateCreateInfo;
+                createInfo.pInputAssemblyState = &inputAssemblyStateCreateInfo;
+                createInfo.pTessellationState = nullptr;
+                createInfo.pViewportState = &viewportStateCreateInfo;
+                createInfo.pRasterizationState = &rasterizationStateCreateInfo;
+                createInfo.pMultisampleState = &multisampleStateCreateInfo;
+                createInfo.pDepthStencilState = &depthStencilStateCreateInfo;
+                createInfo.pColorBlendState = nullptr; // No color attachments
+                createInfo.pDynamicState = nullptr;
+                createInfo.layout = shadowColorModelArrayPipelineLayout;
+                createInfo.renderPass = VK_NULL_HANDLE; // Dynamic rendering: no render pass
+                createInfo.subpass = 0;
+                createInfo.basePipelineHandle = VK_NULL_HANDLE;
+                createInfo.basePipelineIndex = -1;
+
+                RX_VK_MUTEX(
+                RX_CHECK_VULKAN(
+                    vkCreateGraphicsPipelines(
+                        Core::vkDevice,
+                        VK_NULL_HANDLE,
+                        1,
+                        &createInfo,
+                        nullptr,
+                        &shadowColorModelArrayPipeline[i]),
+                    "createShadowColorMeshPipeline",
+                    "vkCreateGraphicsPipelines"));
+
+                RX_VK_MUTEX(
+                    vkDestroyShaderModule(Core::vkDevice, vertexStageInfo.module, nullptr);
+                )
+            }
+        }
+
+        void destroyShadowColorModelArrayPipeline(){
+            RX_VK_MUTEX(
+                for (size_t i = 0; i < 16; ++i) {
+                    vkDestroyPipeline(vkDevice, shadowColorModelArrayPipeline[i], nullptr);
+                }
+            )
+        }
+        
+        void createShadowTextureModelPipeline(){
+            for(uint32_t i = 0; i < 16; i++){
+                // Shader stage: vertex only (no fragment shader for depth-only pass)
+                VkPipelineShaderStageCreateInfo vertexStageInfo{};
+                vertexStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+                vertexStageInfo.flags = 0;
+                vertexStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+                vertexStageInfo.module = shadowTextureModelVertexShader.createShaderModule();
+                vertexStageInfo.pName = "main";
+                vertexStageInfo.pSpecializationInfo = nullptr;
+                vertexStageInfo.pNext = nullptr;
+
+                // Vertex input: only position from Vertex::Texture
+                VkVertexInputBindingDescription vertexBindingDescr{};
+                vertexBindingDescr.binding = 0;
+                vertexBindingDescr.stride = sizeof(Vertex::Texture);
+                vertexBindingDescr.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+                VkVertexInputAttributeDescription vertexAttributeDescr{};
+                vertexAttributeDescr.binding = 0;
+                vertexAttributeDescr.location = 0;
+                vertexAttributeDescr.format = VK_FORMAT_R32G32B32_SFLOAT;
+                vertexAttributeDescr.offset = offsetof(Vertex::Texture, position);
+
+                VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo{};
+                vertexInputStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+                vertexInputStateCreateInfo.vertexBindingDescriptionCount = 1;
+                vertexInputStateCreateInfo.pVertexBindingDescriptions = &vertexBindingDescr;
+                vertexInputStateCreateInfo.vertexAttributeDescriptionCount = 1;
+                vertexInputStateCreateInfo.pVertexAttributeDescriptions = &vertexAttributeDescr;
+
+                VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo{};
+                inputAssemblyStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+                inputAssemblyStateCreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+                inputAssemblyStateCreateInfo.primitiveRestartEnable = VK_FALSE;
+
+                // Viewport/scissor (will be set dynamically or use shadow map dimensions)
+                VkViewport viewport{};
+                viewport.x = 0.f;
+                viewport.y = 0.f;
+                viewport.width = static_cast<float>(Core::shadowMapArray.width);
+                viewport.height = static_cast<float>(Core::shadowMapArray.height);
+                viewport.minDepth = 0.f;
+                viewport.maxDepth = 1.f;
+
+                VkRect2D scissor{};
+                scissor.offset = {0, 0};
+                scissor.extent = {Core::shadowMapArray.width, Core::shadowMapArray.height};
+
+                VkPipelineViewportStateCreateInfo viewportStateCreateInfo{};
+                viewportStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+                viewportStateCreateInfo.viewportCount = 1;
+                viewportStateCreateInfo.pViewports = &viewport;
+                viewportStateCreateInfo.scissorCount = 1;
+                viewportStateCreateInfo.pScissors = &scissor;
+
+                VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo{};
+                rasterizationStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+                rasterizationStateCreateInfo.depthClampEnable = VK_FALSE;
+                rasterizationStateCreateInfo.rasterizerDiscardEnable = VK_FALSE;
+                rasterizationStateCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
+                rasterizationStateCreateInfo.lineWidth = 1.f;
+                rasterizationStateCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+                rasterizationStateCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
+                rasterizationStateCreateInfo.depthBiasEnable = VK_TRUE; // Enable depth bias for shadow acne
+                rasterizationStateCreateInfo.depthBiasConstantFactor = 1.25f;
+                rasterizationStateCreateInfo.depthBiasClamp = 0.f;
+                rasterizationStateCreateInfo.depthBiasSlopeFactor = 1.75f;
+
+                VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo{};
+                multisampleStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+                multisampleStateCreateInfo.sampleShadingEnable = VK_FALSE;
+                multisampleStateCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT; // Shadow maps are typically single-sampled
+                multisampleStateCreateInfo.minSampleShading = 1.f;
+                multisampleStateCreateInfo.pSampleMask = nullptr;
+                multisampleStateCreateInfo.alphaToCoverageEnable = VK_FALSE;
+                multisampleStateCreateInfo.alphaToOneEnable = VK_FALSE;
+
+                VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo{};
+                depthStencilStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+                depthStencilStateCreateInfo.depthTestEnable = VK_TRUE;
+                depthStencilStateCreateInfo.depthWriteEnable = VK_TRUE;
+                depthStencilStateCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+                depthStencilStateCreateInfo.depthBoundsTestEnable = VK_FALSE;
+                depthStencilStateCreateInfo.minDepthBounds = 0.f;
+                depthStencilStateCreateInfo.maxDepthBounds = 1.f;
+                depthStencilStateCreateInfo.stencilTestEnable = VK_FALSE;
+
+                // Dynamic rendering info (for VK_KHR_dynamic_rendering)
+                VkPipelineRenderingCreateInfo renderingInfo{};
+                renderingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+                renderingInfo.colorAttachmentCount = 0; // Depth-only pass
+                renderingInfo.pColorAttachmentFormats = nullptr;
+                renderingInfo.depthAttachmentFormat = Core::shadowMapArray.format; // Use shadow map format (e.g., VK_FORMAT_D32_SFLOAT)
+                renderingInfo.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
+                renderingInfo.viewMask = (1u << i+1) - 1u; // Multiview: enable all layers
+
+                
+                VkGraphicsPipelineCreateInfo createInfo{};
+                createInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+                createInfo.pNext = &renderingInfo; // Chain dynamic rendering info
+                createInfo.stageCount = 1; // Vertex stage only
+                createInfo.pStages = &vertexStageInfo;
+                createInfo.pVertexInputState = &vertexInputStateCreateInfo;
+                createInfo.pInputAssemblyState = &inputAssemblyStateCreateInfo;
+                createInfo.pTessellationState = nullptr;
+                createInfo.pViewportState = &viewportStateCreateInfo;
+                createInfo.pRasterizationState = &rasterizationStateCreateInfo;
+                createInfo.pMultisampleState = &multisampleStateCreateInfo;
+                createInfo.pDepthStencilState = &depthStencilStateCreateInfo;
+                createInfo.pColorBlendState = nullptr; // No color attachments
+                createInfo.pDynamicState = nullptr;
+                createInfo.layout = shadowTextureModelPipelineLayout;
+                createInfo.renderPass = VK_NULL_HANDLE; // Dynamic rendering: no render pass
+                createInfo.subpass = 0;
+                createInfo.basePipelineHandle = VK_NULL_HANDLE;
+                createInfo.basePipelineIndex = -1;
+
+                RX_VK_MUTEX(
+                RX_CHECK_VULKAN(
+                    vkCreateGraphicsPipelines(
+                        Core::vkDevice,
+                        VK_NULL_HANDLE,
+                        1,
+                        &createInfo,
+                        nullptr,
+                        &shadowTextureModelPipeline[i]),
+                    "createShadowTextureModelPipeline",
+                    "vkCreateGraphicsPipelines"));
+
+                RX_VK_MUTEX(
+                    vkDestroyShaderModule(Core::vkDevice, vertexStageInfo.module, nullptr);
+                )
+            }
+        }
+
+        void destroyShadowTextureModelPipeline(){
+            RX_VK_MUTEX(
+                for (size_t i = 0; i < 16; ++i) {
+                    vkDestroyPipeline(vkDevice, shadowTextureModelPipeline[i], nullptr);
+                }
+            )
+        }
+
+
+        void createShadowSkeletonModelPipeline(){
+            for(uint32_t i = 0; i < 16; i++){
+                // Shader stage: vertex only (no fragment shader for depth-only pass)
+                VkPipelineShaderStageCreateInfo vertexStageInfo{};
+                vertexStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+                vertexStageInfo.flags = 0;
+                vertexStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+                vertexStageInfo.module = shadowSkeletonModelVertexShader.createShaderModule();
+                vertexStageInfo.pName = "main";
+                vertexStageInfo.pSpecializationInfo = nullptr;
+                vertexStageInfo.pNext = nullptr;
+
+                VkVertexInputBindingDescription vertexBindingDescr{};
+                vertexBindingDescr.binding = 0;
+                vertexBindingDescr.stride = sizeof(Vertex::Skeleton);
+                vertexBindingDescr.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+                std::vector<VkVertexInputAttributeDescription> vertexAttributeDescr(6);
+                vertexAttributeDescr[0].binding = 0;
+                vertexAttributeDescr[0].location = 0;
+                vertexAttributeDescr[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+                vertexAttributeDescr[0].offset = offsetof(Vertex::Skeleton,position);
+                vertexAttributeDescr[1].binding = 0;
+                vertexAttributeDescr[1].location = 1;
+                vertexAttributeDescr[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+                vertexAttributeDescr[1].offset = offsetof(Vertex::Skeleton,normal);
+                vertexAttributeDescr[2].binding = 0;
+                vertexAttributeDescr[2].location = 2;
+                vertexAttributeDescr[2].format = VK_FORMAT_R32G32_SFLOAT;
+                vertexAttributeDescr[2].offset = offsetof(Vertex::Skeleton,texCoord);
+                vertexAttributeDescr[3].binding = 0;
+                vertexAttributeDescr[3].location = 3;
+                vertexAttributeDescr[3].format = VK_FORMAT_R32G32B32A32_SINT;
+                vertexAttributeDescr[3].offset = offsetof(Vertex::Skeleton,bones);
+                vertexAttributeDescr[4].binding = 0;
+                vertexAttributeDescr[4].location = 4;
+                vertexAttributeDescr[4].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+                vertexAttributeDescr[4].offset = offsetof(Vertex::Skeleton,weights);
+                vertexAttributeDescr[5].binding = 0;
+                vertexAttributeDescr[5].location = 5;
+                vertexAttributeDescr[5].format = VK_FORMAT_R32_SINT;
+                vertexAttributeDescr[5].offset = offsetof(Vertex::Skeleton, nodeIndex);
+
+                VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo{};
+                vertexInputStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+                vertexInputStateCreateInfo.vertexBindingDescriptionCount = 1;
+                vertexInputStateCreateInfo.pVertexBindingDescriptions = &vertexBindingDescr;
+                vertexInputStateCreateInfo.vertexAttributeDescriptionCount = 6;
+                vertexInputStateCreateInfo.pVertexAttributeDescriptions = vertexAttributeDescr.data();
+
+                VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo{};
+                inputAssemblyStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+                inputAssemblyStateCreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+                inputAssemblyStateCreateInfo.primitiveRestartEnable = VK_FALSE;
+
+                // Viewport/scissor (will be set dynamically or use shadow map dimensions)
+                VkViewport viewport{};
+                viewport.x = 0.f;
+                viewport.y = 0.f;
+                viewport.width = static_cast<float>(Core::shadowMapArray.width);
+                viewport.height = static_cast<float>(Core::shadowMapArray.height);
+                viewport.minDepth = 0.f;
+                viewport.maxDepth = 1.f;
+
+                VkRect2D scissor{};
+                scissor.offset = {0, 0};
+                scissor.extent = {Core::shadowMapArray.width, Core::shadowMapArray.height};
+
+                VkPipelineViewportStateCreateInfo viewportStateCreateInfo{};
+                viewportStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+                viewportStateCreateInfo.viewportCount = 1;
+                viewportStateCreateInfo.pViewports = &viewport;
+                viewportStateCreateInfo.scissorCount = 1;
+                viewportStateCreateInfo.pScissors = &scissor;
+
+                VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo{};
+                rasterizationStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+                rasterizationStateCreateInfo.depthClampEnable = VK_FALSE;
+                rasterizationStateCreateInfo.rasterizerDiscardEnable = VK_FALSE;
+                rasterizationStateCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
+                rasterizationStateCreateInfo.lineWidth = 1.f;
+                rasterizationStateCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+                rasterizationStateCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
+                rasterizationStateCreateInfo.depthBiasEnable = VK_TRUE; // Enable depth bias for shadow acne
+                rasterizationStateCreateInfo.depthBiasConstantFactor = 1.25f;
+                rasterizationStateCreateInfo.depthBiasClamp = 0.f;
+                rasterizationStateCreateInfo.depthBiasSlopeFactor = 1.75f;
+
+                VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo{};
+                multisampleStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+                multisampleStateCreateInfo.sampleShadingEnable = VK_FALSE;
+                multisampleStateCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT; // Shadow maps are typically single-sampled
+                multisampleStateCreateInfo.minSampleShading = 1.f;
+                multisampleStateCreateInfo.pSampleMask = nullptr;
+                multisampleStateCreateInfo.alphaToCoverageEnable = VK_FALSE;
+                multisampleStateCreateInfo.alphaToOneEnable = VK_FALSE;
+
+                VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo{};
+                depthStencilStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+                depthStencilStateCreateInfo.depthTestEnable = VK_TRUE;
+                depthStencilStateCreateInfo.depthWriteEnable = VK_TRUE;
+                depthStencilStateCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+                depthStencilStateCreateInfo.depthBoundsTestEnable = VK_FALSE;
+                depthStencilStateCreateInfo.minDepthBounds = 0.f;
+                depthStencilStateCreateInfo.maxDepthBounds = 1.f;
+                depthStencilStateCreateInfo.stencilTestEnable = VK_FALSE;
+
+                // Dynamic rendering info (for VK_KHR_dynamic_rendering)
+                VkPipelineRenderingCreateInfo renderingInfo{};
+                renderingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+                renderingInfo.colorAttachmentCount = 0; // Depth-only pass
+                renderingInfo.pColorAttachmentFormats = nullptr;
+                renderingInfo.depthAttachmentFormat = Core::shadowMapArray.format; // Use shadow map format (e.g., VK_FORMAT_D32_SFLOAT)
+                renderingInfo.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
+                renderingInfo.viewMask = (1u << i+1) - 1u; // Multiview: enable all layers
+
+                
+                VkGraphicsPipelineCreateInfo createInfo{};
+                createInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+                createInfo.pNext = &renderingInfo; // Chain dynamic rendering info
+                createInfo.stageCount = 1; // Vertex stage only
+                createInfo.pStages = &vertexStageInfo;
+                createInfo.pVertexInputState = &vertexInputStateCreateInfo;
+                createInfo.pInputAssemblyState = &inputAssemblyStateCreateInfo;
+                createInfo.pTessellationState = nullptr;
+                createInfo.pViewportState = &viewportStateCreateInfo;
+                createInfo.pRasterizationState = &rasterizationStateCreateInfo;
+                createInfo.pMultisampleState = &multisampleStateCreateInfo;
+                createInfo.pDepthStencilState = &depthStencilStateCreateInfo;
+                createInfo.pColorBlendState = nullptr; // No color attachments
+                createInfo.pDynamicState = nullptr;
+                createInfo.layout = shadowSkeletonModelPipelineLayout;
+                createInfo.renderPass = VK_NULL_HANDLE; // Dynamic rendering: no render pass
+                createInfo.subpass = 0;
+                createInfo.basePipelineHandle = VK_NULL_HANDLE;
+                createInfo.basePipelineIndex = -1;
+
+                RX_VK_MUTEX(
+                RX_CHECK_VULKAN(
+                    vkCreateGraphicsPipelines(
+                        Core::vkDevice,
+                        VK_NULL_HANDLE,
+                        1,
+                        &createInfo,
+                        nullptr,
+                        &shadowSkeletonModelPipeline[i]),
+                    "createShadowSkeletonModelPipeline",
+                    "vkCreateGraphicsPipelines"));
+
+                RX_VK_MUTEX(
+                    vkDestroyShaderModule(Core::vkDevice, vertexStageInfo.module, nullptr);
+                )
+            }
+        }
+
+        void destroyShadowSkeletonModelPipeline(){
+            RX_VK_MUTEX(
+                for (size_t i = 0; i < 16; ++i) {
+                    vkDestroyPipeline(vkDevice, shadowSkeletonModelPipeline[i], nullptr);
+                }
+            )
+        }
     }
 } // namespace Rx::Core

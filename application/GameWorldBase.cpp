@@ -5,8 +5,9 @@
 #include "Transform.hpp"
 #include "MeshTransform.hpp"
 #include "VkInstancedColorModelBuffer.hpp"
+#include "VkColorMeshArray.hpp"
 #include "ColorMeshArray.hpp"
-#include "ColorArrayGraphics.hpp"
+#include "VkColorModelArrayDescriptorSet.hpp"
 #include "VkIndirectBuffer.hpp"
 #include "ColorModelInstance.hpp"
 #include "VkInstancedColorModelDescriptorSet.hpp"
@@ -32,6 +33,12 @@
 #include "Skeleton.hpp"
 #include "CharacterCapsule.hpp"
 #include "CharacterController.hpp"
+#include "ShadowSpotLight.hpp"
+#include "VkShadowColorModelDescriptorSet.hpp"
+#include "VkShadowColorModelArrayDescriptorSet.hpp"
+#include "Eye.hpp"
+#include "VkShadowTextureModelDescriptorSet.hpp"
+#include "VkShadowSkeletonModelDescriptorSet.hpp"
 
 namespace Rx{
 
@@ -60,11 +67,11 @@ namespace Rx{
             world.component<Rx::Component::VkColorMesh>();
             world.component<Rx::Component::Transform>();            
 
-            world.component<Rx::Component::MeshArray>();
             world.component<Rx::Component::ColorMeshArray>();
+            world.component<Rx::Component::VkColorMeshArray>();
             world.component<Rx::Component::VkInstancedColorModelBuffer>();
             world.component<Rx::Component::VkIndirectBuffer>();
-            world.component<Rx::Component::ColorArrayGraphics>();
+            world.component<Rx::Component::VkColorModelArrayDescriptorSet>();
             world.component<VkDrawIndexedIndirectCommand>();
 
             world.component<Rx::Component::TextureMeshArray>();
@@ -95,6 +102,14 @@ namespace Rx{
             .event(flecs::OnRemove)
             .each(graphics_component_on_remove);
 
+            // Ensure shadow color model descriptor sets are created/destroyed properly
+            world.observer<Rx::Component::VkColorModelBuffer, Rx::Component::VkShadowColorModelDescriptorSet>()
+            .event(flecs::OnAdd)
+            .each(shadowColorModelDescriptorSet_component_on_add);
+            world.observer<Rx::Component::VkShadowColorModelDescriptorSet>()
+            .event(flecs::OnRemove)
+            .each(shadowColorModelDescriptorSet_component_on_remove);
+
             world.observer<Rx::Component::ColorMesh, Rx::Component::VkColorMesh>()
             .event(flecs::OnAdd)
             .each(mesh_component_on_add);
@@ -103,11 +118,11 @@ namespace Rx{
             .event(flecs::OnRemove)
             .each(mesh_component_on_remove);
 
-            world.observer<Rx::Component::MeshArray, Rx::Component::ColorMeshArray>()
+            world.observer<Rx::Component::ColorMeshArray, Rx::Component::VkColorMeshArray>()
             .event(flecs::OnAdd)
             .each(Rx::Component::colorMeshArray_component_on_add);
 
-            world.observer<Rx::Component::ColorMeshArray>()
+            world.observer<Rx::Component::VkColorMeshArray>()
             .event(flecs::OnRemove)
             .each(Rx::Component::colorMeshArray_component_on_remove);
 
@@ -127,13 +142,21 @@ namespace Rx{
             .event(flecs::OnRemove)
             .each(Rx::Component::indirectBuffer_component_on_remove);
 
-            world.observer<Rx::Component::VkInstancedColorModelBuffer, Rx::Component::ColorArrayGraphics>()
+            world.observer<Rx::Component::VkInstancedColorModelBuffer, Rx::Component::VkColorModelArrayDescriptorSet>()
             .event(flecs::OnAdd)
             .each(Rx::Component::colorArrayGraphics_component_on_add);
 
-            world.observer<Rx::Component::ColorArrayGraphics>()
+            world.observer<Rx::Component::VkColorModelArrayDescriptorSet>()
             .event(flecs::OnRemove)
             .each(Rx::Component::colorArrayGraphics_component_on_remove);
+
+            world.observer<Rx::Component::VkInstancedColorModelBuffer, Rx::Component::VkShadowColorModelArrayDescriptorSet>()
+            .event(flecs::OnAdd)
+            .each(Rx::Component::VkShadowColorModelArrayDescriptorSet_component_on_add);
+
+            world.observer<Rx::Component::VkShadowColorModelArrayDescriptorSet>()
+            .event(flecs::OnRemove)
+            .each(Rx::Component::VkShadowColorModelArrayDescriptorSet_component_on_remove);
 
             world.observer<Rx::Component::VkInstancedColorModelBuffer, Rx::Component::VkInstancedColorModelDescriptorSet>()
             .event(flecs::OnAdd)
@@ -179,6 +202,14 @@ namespace Rx{
             .event(flecs::OnAdd)
             .each(Rx::Component::textureModelDescriptorSet_component_on_add);
 
+            world.observer<Rx::Component::VkTransformBuffer, Rx::Component::VkShadowTextureModelDescriptorSet>()
+            .event(flecs::OnAdd)
+            .each(Rx::Component::VkShadowTextureModelDescriptorSet_component_on_add);
+
+            world.observer<Rx::Component::VkShadowTextureModelDescriptorSet>()
+            .event(flecs::OnRemove)
+            .each(Rx::Component::VkShadowTextureModelDescriptorSet_component_on_remove);
+
             world.observer<Rx::Component::VkTextureModelDescriptorSet>()
             .event(flecs::OnRemove)
             .each(Rx::Component::textureModelDescriptorSet_component_on_remove);
@@ -207,6 +238,14 @@ namespace Rx{
             .event(flecs::OnRemove)
             .each(Rx::Component::vkSkeletonModelDescriptorSet_component_on_remove);
 
+            world.observer<Rx::Component::VkTransformBuffer, Rx::Component::VkSkeletonArrayBuffer, Rx::Component::VkShadowSkeletonModelDescriptorSet>()
+            .event(flecs::OnAdd)
+            .each(Rx::Component::VkShadowSkeletonModelDescriptorSet_component_on_add);
+
+            world.observer<Rx::Component::VkShadowSkeletonModelDescriptorSet>()
+            .event(flecs::OnRemove)
+            .each(Rx::Component::VkShadowSkeletonModelDescriptorSet_component_on_remove);
+
             world.observer<Rx::Component::Skeleton>()
             .event(flecs::OnSet)
             .each(Rx::Component::skeleton_on_component_set);
@@ -231,6 +270,7 @@ namespace Rx{
             .event(flecs::OnAdd)
             .each(Rx::Component::vkSkeletonModelCompDescriptorSet_component_on_add);
 
+           
             world.observer<Rx::Component::VkSkeletonModelCompDescriptorSet>()
             .event(flecs::OnRemove)
             .each(Rx::Component::vkSkeletonModelCompDescriptorSet_component_on_remove);
@@ -257,8 +297,10 @@ namespace Rx{
             onRecordComp.depends_on(onRecordBarrier1);
             onRecordBarrier2 = world.entity("OnRecordBarrier2");
             onRecordBarrier2.depends_on(onRecordComp);
+            onRecordShadow = world.entity("OnRecordShadow");
+            onRecordShadow.depends_on(onRecordBarrier2);
             onRecordRenderPassBegin = world.entity("OnRecordRenderPassBegin");
-            onRecordRenderPassBegin.depends_on(onRecordBarrier2);
+            onRecordRenderPassBegin.depends_on(onRecordShadow);
             onRecordRender = world.entity("OnRecordRender");
             onRecordRender.depends_on(onRecordRenderPassBegin);
             onRecordEnd = world.entity("OnRecordEnd");
@@ -325,6 +367,44 @@ namespace Rx{
                 directionalLightBuffer.numberDirectionalLights[0] = bufferIndex;
             });
 
+            world.system<Component::Transform, Component::ShadowSpotLight>("ShadowSpotLightUpdate")
+            .kind(preRender)
+            .with<RenderRunning>().src(game)
+            .run([&](flecs::iter& it) {
+                Core::ShadowSpotLightBuffer& shadowBuffer = 
+                    *(Core::ShadowSpotLightBuffer*)Core::shadowSpotLightBuffer.pMemory;
+                
+                uint32_t bufferIndex = 0;
+                while(it.next()) {
+                    auto transforms = it.field<Component::Transform>(0);
+                    auto lights = it.field<Component::ShadowSpotLight>(1);
+
+                    for(auto i : it) {
+                        if (bufferIndex >= 16) break; // max 16 shadow spot lights
+                        
+                        // Extract position and forward direction from transform
+                        glm::vec3 position = transforms[i].translation;
+                        glm::vec3 forward = transforms[i].forward(); // -Z axis typically
+                        glm::vec3 up = transforms[i].up();           // Y axis
+                        
+                        auto [proj, view] = Core::getEyeMatrices(position, forward, up, lights[i].fov, lights[i].aspectRatio, lights[i].nearPlane, lights[i].farPlane);
+
+                        // Combine into light-space matrix
+                        glm::mat4 lightSpaceMatrix = proj * view;
+                        
+                        // Fill buffer
+                        shadowBuffer.lights[bufferIndex].position = glm::vec4(position, 1.f);
+                        shadowBuffer.lights[bufferIndex].direction = glm::vec4(forward, 0.0f);
+                        shadowBuffer.lights[bufferIndex].color = glm::vec4(lights[i].color, 1.0f);
+                        shadowBuffer.lights[bufferIndex].intensity = glm::vec4(lights[i].intensity, 0.0f, 0.0f, 0.0f);
+                        shadowBuffer.lights[bufferIndex].lightSpaceMatrix = lightSpaceMatrix;
+                        
+                        bufferIndex++;
+                    }
+                }
+                
+                shadowBuffer.numberShadowSpotLights = glm::ivec4(static_cast<int>(bufferIndex), 0, 0, 0);
+            });
 
             world.system("IndirectBufferReset")
             .with<Rx::Component::VkIndirectBuffer>()
@@ -595,7 +675,6 @@ namespace Rx{
                                 auto& indirectBuffer = prev_parent.get_mut<Rx::Component::IndirectBuffer>();
                                 indirectBuffer.setInstanceCount(instanceIndex);
                                 prev_parent.get_mut<Rx::Component::VkIndirectBuffer>().copyFrom(indirectBuffer);
-                                std::cout << "Finalizing group: " << group_id << " with instance count: " << instanceIndex << std::endl;
                             }
                             group_id = it.group_id();
                             instanceIndex = 0; 
@@ -648,7 +727,6 @@ namespace Rx{
                         auto& indirectBuffer = prev_parent.get_mut<Rx::Component::IndirectBuffer>();
                         indirectBuffer.setInstanceCount(instanceIndex);
                         prev_parent.get_mut<Rx::Component::VkIndirectBuffer>().copyFrom(indirectBuffer);
-                        std::cout << "Finalizing group: " << group_id << " with instance count: " << instanceIndex << std::endl;
                     }
                 });
 
@@ -804,7 +882,7 @@ namespace Rx{
             .run([](flecs::iter& it) {
                  while(it.next()) {
                      Rx::Core::vulkanCommandMutex.lock();
-                     Rx::Core::beginCommand(Rx::Core::command[Rx::Core::commandIndex]);
+                     Rx::Core::beginCommand(Rx::Core::command);
                  }
             });
 
@@ -821,7 +899,7 @@ namespace Rx{
                     memoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
                     vkCmdPipelineBarrier(
-                        Rx::Core::command[Rx::Core::commandIndex].vkCommandBuffer,
+                        Rx::Core::command.vkCommandBuffer,
                         VK_PIPELINE_STAGE_HOST_BIT,
                         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                         0,
@@ -841,7 +919,7 @@ namespace Rx{
             .run([](flecs::iter& it) {
 
                 vkCmdBindPipeline(
-                    Rx::Core::command[Rx::Core::commandIndex].vkCommandBuffer,
+                    Rx::Core::command.vkCommandBuffer,
                     VK_PIPELINE_BIND_POINT_COMPUTE,
                     Rx::Core::skeletonModelCompPipeline
                 );
@@ -857,7 +935,7 @@ namespace Rx{
                         const auto& transformBuffer = transformBuffers[i];
 
                         vkCmdBindDescriptorSets(
-                            Rx::Core::command[Rx::Core::commandIndex].vkCommandBuffer,
+                            Rx::Core::command.vkCommandBuffer,
                             VK_PIPELINE_BIND_POINT_COMPUTE,
                             Rx::Core::skeletonModelCompPipelineLayout,
                             0, 1,
@@ -872,7 +950,7 @@ namespace Rx{
                         pushConstants.numberNodes = skeleton.nodes.size();
 
                         vkCmdPushConstants(
-                            Rx::Core::command[Rx::Core::commandIndex].vkCommandBuffer,
+                            Rx::Core::command.vkCommandBuffer,
                             Rx::Core::skeletonModelCompPipelineLayout,
                             VK_SHADER_STAGE_COMPUTE_BIT,
                             0,
@@ -882,22 +960,18 @@ namespace Rx{
 
                         // Dispatch one workgroup per skeleton instance
                         vkCmdDispatch(
-                            Rx::Core::command[Rx::Core::commandIndex].vkCommandBuffer,
+                            Rx::Core::command.vkCommandBuffer,
                             transformBuffer.numberTransforms, // Group Count X
                             1,                              // Group Count Y
                             1                               // Group Count Z
                         );
                     }
-                }
-                
-
-            
-
-                
+                }                
             });
 
             world.system()
             .kind(onRecordBarrier2)
+            .with<RenderRunning>().src(game)
             .run([](flecs::iter& it) {
                 while (it.next()) {
 
@@ -909,7 +983,7 @@ namespace Rx{
                     memoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
                     vkCmdPipelineBarrier(
-                        Rx::Core::command[Rx::Core::commandIndex].vkCommandBuffer,
+                        Rx::Core::command.vkCommandBuffer,
                         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,  // Source stage
                         VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, // Destination stage
                         0,
@@ -921,10 +995,331 @@ namespace Rx{
             });
 
             world.system()
+            .kind(onRecordShadow)
+            .with<RenderRunning>().src(game)
+            .run([](flecs::iter& it) {
+                 while(it.next()) {
+                    Core::ShadowSpotLightBuffer& shadowBuffer = 
+                        *(Core::ShadowSpotLightBuffer*)Core::shadowSpotLightBuffer.pMemory;
+                    
+                    uint32_t activeLights = static_cast<uint32_t>(shadowBuffer.numberShadowSpotLights.x);
+                    if (activeLights == 0) {
+                        // One-time or per-frame init: transition all layers to SHADER_READ_ONLY_OPTIMAL
+                        VkImageMemoryBarrier init{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+                        init.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                        init.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                        init.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED; // or current known layout
+                        init.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                        init.srcAccessMask = 0;
+                        init.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+                        init.image = Core::shadowMapArray.vkImage;
+                        init.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+                        init.subresourceRange.baseMipLevel = 0;
+                        init.subresourceRange.levelCount = 1;
+                        init.subresourceRange.baseArrayLayer = 0;
+                        init.subresourceRange.layerCount = Core::shadowMapArray.count; // Max layers
+
+                        VkCommandBuffer cmd0 = Core::command.vkCommandBuffer;
+                        vkCmdPipelineBarrier(cmd0,
+                            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                            0, 0, nullptr, 0, nullptr, 1, &init);
+                        // Do not return from inside an iterator loop; continue to allow ecs_iter_fini
+                        continue;
+                    }
+
+                    VkCommandBuffer cmd = Core::command.vkCommandBuffer;
+
+                    // Transition shadow map array to attachment layout
+                    VkImageMemoryBarrier toDepth{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+                    toDepth.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                    toDepth.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                    toDepth.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                    toDepth.newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+                    toDepth.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+                    toDepth.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                    toDepth.image = Core::shadowMapArray.vkImage;
+                    toDepth.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+                    toDepth.subresourceRange.baseMipLevel = 0;
+                    toDepth.subresourceRange.levelCount = 1;
+                    toDepth.subresourceRange.baseArrayLayer = 0;
+                    toDepth.subresourceRange.layerCount = activeLights;
+
+                    vkCmdPipelineBarrier(cmd,
+                        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                        VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+                        0, 0, nullptr, 0, nullptr, 1, &toDepth);
+
+
+                    // Begin dynamic rendering (multiview)
+                    VkRenderingAttachmentInfo depthAttachment{VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO};
+                    depthAttachment.imageView = Core::shadowMapArray.vkImageView;
+                    depthAttachment.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+                    depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+                    depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+                    depthAttachment.clearValue.depthStencil = {1.0f, 0};
+
+                    uint32_t viewMask = (1u << activeLights) - 1u;
+                    VkRenderingInfo renderingInfo{VK_STRUCTURE_TYPE_RENDERING_INFO};
+                    renderingInfo.renderArea = {{0, 0}, 
+                        {Core::shadowMapArray.width, Core::shadowMapArray.height}};
+                    renderingInfo.layerCount = 1; // multiview uses viewMask
+                    renderingInfo.viewMask = viewMask;
+                    renderingInfo.pDepthAttachment = &depthAttachment;
+
+                    vkCmdBeginRendering(cmd, &renderingInfo);
+
+                }   
+            });
+
+            world.system<Component::VkColorMesh, Component::VkShadowColorModelDescriptorSet>("ShadowColorMeshSystem")
+            .kind(onRecordShadow)
+            .with<RenderRunning>().src(game)
+            .run([](flecs::iter& it) {
+                Core::ShadowSpotLightBuffer& shadowBuffer = 
+                    *(Core::ShadowSpotLightBuffer*)Core::shadowSpotLightBuffer.pMemory;
+                
+                uint32_t activeLights = static_cast<uint32_t>(shadowBuffer.numberShadowSpotLights.x);
+
+                if(activeLights == 0) {
+                    while(it.next()){}
+                    return; // Nothing to do
+                }
+                
+                VkCommandBuffer cmd = Core::command.vkCommandBuffer;
+                vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, 
+                                  Core::shadowColorMeshPipeline[activeLights - 1]);
+
+                // Render all shadow casters (each with its own descriptor set)
+                while(it.next()) {
+                    auto meshes = it.field<Component::VkColorMesh>(0);
+                    auto descriptorSets = it.field<Component::VkShadowColorModelDescriptorSet>(1);
+
+                    for(auto i : it) {
+                        // Bind unique descriptor set for this mesh (contains Model buffer + Lights buffer)
+                        vkCmdBindDescriptorSets(cmd,
+                            VK_PIPELINE_BIND_POINT_GRAPHICS, 
+                            Core::shadowColorMeshPipelineLayout,
+                            0, 1, &descriptorSets[i].getDescriptorSet(), 
+                            0, nullptr);
+
+                        // Bind vertex/index buffers
+                        VkDeviceSize offset = 0;
+                        vkCmdBindVertexBuffers(cmd, 0, 1, &meshes[i].vertexBuffer.vkBuffer, &offset);
+                        vkCmdBindIndexBuffer(cmd, meshes[i].indexBuffer.vkBuffer, 0, VK_INDEX_TYPE_UINT32);
+                        
+                        // Draw
+                        vkCmdDrawIndexed(cmd, meshes[i].getNumberIndices(), 1, 0, 0, 0);
+                    }
+                }
+
+               
+            });
+
+            world.system<Rx::Component::VkColorMeshArray, Rx::Component::VkIndirectBuffer, Rx::Component::VkShadowColorModelArrayDescriptorSet>()
+            .kind(onRecordShadow)
+            .with<RenderRunning>().src(game)
+            .run([](flecs::iter& it) {
+                 Core::ShadowSpotLightBuffer& shadowBuffer = 
+                    *(Core::ShadowSpotLightBuffer*)Core::shadowSpotLightBuffer.pMemory;
+                uint32_t activeLights = static_cast<uint32_t>(shadowBuffer.numberShadowSpotLights.x);
+                
+                if(activeLights == 0) {
+                    while(it.next()){}
+                    return; // Nothing to do
+                }
+                
+                vkCmdBindPipeline
+                (Rx::Core::command.vkCommandBuffer,
+                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                Rx::Core::shadowColorModelArrayPipeline[activeLights - 1]);
+                                
+                while(it.next()) {
+                    auto colorMeshArray = it.field<Rx::Component::VkColorMeshArray>(0);
+                    auto indirectBuffer = it.field<Rx::Component::VkIndirectBuffer>(1);
+                    auto graphics = it.field<Rx::Component::VkShadowColorModelArrayDescriptorSet>(2);
+
+                    for( auto i : it) {
+                    
+                        vkCmdBindDescriptorSets
+                        (Rx::Core::command.vkCommandBuffer,
+                        VK_PIPELINE_BIND_POINT_GRAPHICS,
+                        Rx::Core::shadowColorModelArrayPipelineLayout,
+                        0, 1,
+                        &graphics[i].vkDescriptorSet, 0, nullptr);
+
+                    
+                        VkDeviceSize offset[] = { 0 };    
+                        vkCmdBindVertexBuffers
+                        (Rx::Core::command.vkCommandBuffer,
+                        0, 1, 
+                        &colorMeshArray[i].vertexBuffer.vkBuffer, offset);
+
+                        vkCmdBindIndexBuffer
+                        (Rx::Core::command.vkCommandBuffer,
+                        colorMeshArray[i].indexBuffer.vkBuffer,
+                        0, VK_INDEX_TYPE_UINT32);
+
+                        vkCmdDrawIndexedIndirect
+                        (Rx::Core::command.vkCommandBuffer,
+                        indirectBuffer[i].buffer.vkBuffer, 0,
+                        indirectBuffer[i].numberCommands, 
+                        sizeof(VkDrawIndexedIndirectCommand));
+                    }
+                }
+            });
+
+            world.system<Rx::Component::VkTextureMeshArray, Rx::Component::VkIndirectBuffer, Rx::Component::VkShadowTextureModelDescriptorSet>()
+            .kind(onRecordShadow)
+            .with<RenderRunning>().src(game)
+            .run([](flecs::iter& it) {
+                 Core::ShadowSpotLightBuffer& shadowBuffer = 
+                    *(Core::ShadowSpotLightBuffer*)Core::shadowSpotLightBuffer.pMemory;
+                uint32_t activeLights = static_cast<uint32_t>(shadowBuffer.numberShadowSpotLights.x);
+                
+                if(activeLights == 0) {
+                    while(it.next()){}
+                    return; // Nothing to do
+                }
+                
+                vkCmdBindPipeline
+                (Rx::Core::command.vkCommandBuffer,
+                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                Rx::Core::shadowTextureModelPipeline[activeLights - 1]);
+                                
+                while(it.next()) {
+                    auto colorMeshArray = it.field<Rx::Component::VkTextureMeshArray>(0);
+                    auto indirectBuffer = it.field<Rx::Component::VkIndirectBuffer>(1);
+                    auto graphics = it.field<Rx::Component::VkShadowTextureModelDescriptorSet>(2);
+
+                    for( auto i : it) {
+                    
+                        vkCmdBindDescriptorSets
+                        (Rx::Core::command.vkCommandBuffer,
+                        VK_PIPELINE_BIND_POINT_GRAPHICS,
+                        Rx::Core::shadowTextureModelPipelineLayout,
+                        0, 1,
+                        &graphics[i].vkDescriptorSet, 0, nullptr);
+
+                    
+                        VkDeviceSize offset[] = { 0 };    
+                        vkCmdBindVertexBuffers
+                        (Rx::Core::command.vkCommandBuffer,
+                        0, 1, 
+                        &colorMeshArray[i].vertexBuffer.vkBuffer, offset);
+
+                        vkCmdBindIndexBuffer
+                        (Rx::Core::command.vkCommandBuffer,
+                        colorMeshArray[i].indexBuffer.vkBuffer,
+                        0, VK_INDEX_TYPE_UINT32);
+
+                        vkCmdDrawIndexedIndirect
+                        (Rx::Core::command.vkCommandBuffer,
+                        indirectBuffer[i].buffer.vkBuffer, 0,
+                        indirectBuffer[i].numberCommands, 
+                        sizeof(VkDrawIndexedIndirectCommand));
+                    }
+                }
+            });
+
+            world.system<Rx::Component::VkSkeletonMeshArray,  Rx::Component::VkShadowSkeletonModelDescriptorSet, Rx::Component::VkIndirectBuffer>()
+            .kind(onRecordShadow)
+            .with<RenderRunning>().src(game)
+            .run([](flecs::iter& it) {
+                 Core::ShadowSpotLightBuffer& shadowBuffer = 
+                    *(Core::ShadowSpotLightBuffer*)Core::shadowSpotLightBuffer.pMemory;
+                uint32_t activeLights = static_cast<uint32_t>(shadowBuffer.numberShadowSpotLights.x);
+                
+                if(activeLights == 0) {
+                    while(it.next()){}
+                    return; // Nothing to do
+                }
+
+                vkCmdBindPipeline
+                (Rx::Core::command.vkCommandBuffer,
+                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                Rx::Core::shadowSkeletonModelPipeline[activeLights - 1]);
+
+                while(it.next()) {
+                    auto skeletonMeshes = it.field<Rx::Component::VkSkeletonMeshArray>(0);
+                    auto descriptorSets = it.field<Rx::Component::VkShadowSkeletonModelDescriptorSet>(1);
+                    auto indirectBuffers = it.field<Rx::Component::VkIndirectBuffer>(2);
+
+                    for( auto i : it) {
+                     
+                        vkCmdBindDescriptorSets
+                        (Rx::Core::command.vkCommandBuffer,
+                        VK_PIPELINE_BIND_POINT_GRAPHICS,
+                        Rx::Core::shadowSkeletonModelPipelineLayout,
+                        0, 1,
+                        &descriptorSets[i].vkDescriptorSet, 0, nullptr);
+
+                        VkDeviceSize offset[] = { 0 };    
+                        vkCmdBindVertexBuffers
+                        (Rx::Core::command.vkCommandBuffer,
+                        0, 1, 
+                        &skeletonMeshes[i].vertexBuffer.vkBuffer, offset);
+
+                        vkCmdBindIndexBuffer
+                        (Rx::Core::command.vkCommandBuffer,
+                        skeletonMeshes[i].indexBuffer.vkBuffer,
+                        0, VK_INDEX_TYPE_UINT32);
+
+                        vkCmdDrawIndexedIndirect
+                        (Rx::Core::command.vkCommandBuffer,
+                        indirectBuffers[i].buffer.vkBuffer,
+                        0, indirectBuffers[i].numberCommands,
+                        sizeof(VkDrawIndexedIndirectCommand));
+                    }
+                }
+            });
+
+
+            world.system()
+            .kind(onRecordShadow)
+            .run([](flecs::iter& it) {
+
+                Core::ShadowSpotLightBuffer& shadowBuffer = 
+                *(Core::ShadowSpotLightBuffer*)Core::shadowSpotLightBuffer.pMemory;
+                uint32_t activeLights = static_cast<uint32_t>(shadowBuffer.numberShadowSpotLights.x);
+            
+                 if(activeLights == 0) {
+                    while(it.next()){}
+                    return; // Nothing to do
+                }
+               
+                while(it.next()) {
+                
+                    VkCommandBuffer cmd = Core::command.vkCommandBuffer;
+                    vkCmdEndRendering(cmd);
+
+                    // Transition to read-only for main pass
+                    VkImageMemoryBarrier toRead{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+                    toRead.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                    toRead.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                    toRead.oldLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+                    toRead.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                    toRead.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                    toRead.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+                    toRead.image = Core::shadowMapArray.vkImage;
+                    toRead.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+                    toRead.subresourceRange.baseMipLevel = 0;
+                    toRead.subresourceRange.levelCount = 1;
+                    toRead.subresourceRange.baseArrayLayer = 0;
+                    toRead.subresourceRange.layerCount = activeLights;
+
+                    vkCmdPipelineBarrier(cmd,
+                        VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+                        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                        0, 0, nullptr, 0, nullptr, 1, &toRead);
+                }
+            });
+
+            world.system()
             .kind(onRecordRenderPassBegin)
             .run([](flecs::iter& it) {
                 while (it.next()) {
-                    Rx::Core::beginRenderPass(Rx::Core::command[Rx::Core::commandIndex]);
+                    Rx::Core::beginRenderPass(Rx::Core::command);
                 }
             });
 
@@ -935,16 +1330,16 @@ namespace Rx{
             .run([](flecs::iter& it) {    
             
                 vkCmdBindPipeline
-                (Rx::Core::command[Rx::Core::commandIndex].vkCommandBuffer,
+                (Rx::Core::command.vkCommandBuffer,
                 VK_PIPELINE_BIND_POINT_GRAPHICS,
                 Rx::Core::colorMeshPipeline);
 
                 while (it.next()) {
-                auto descriptorSet = it.field<Rx::Component::VkColorModelDescriptorSet>(0);
-                auto modelBuffers = it.field<Rx::Component::VkColorModelBuffer>(1);
-                auto meshes = it.field<Rx::Component::VkColorMesh>(2);
-                auto materials = it.field<Rx::Component::Material>(3);
-                auto transforms = it.field<Rx::Component::Transform>(4);
+                    auto descriptorSet = it.field<Rx::Component::VkColorModelDescriptorSet>(0);
+                    auto modelBuffers = it.field<Rx::Component::VkColorModelBuffer>(1);
+                    auto meshes = it.field<Rx::Component::VkColorMesh>(2);
+                    auto materials = it.field<Rx::Component::Material>(3);
+                    auto transforms = it.field<Rx::Component::Transform>(4);
 
                     for (auto i : it)
                     {
@@ -953,18 +1348,18 @@ namespace Rx{
 
                         VkDeviceSize offset[] = { 0 };    
                         vkCmdBindVertexBuffers
-                        (Rx::Core::command[Rx::Core::commandIndex].vkCommandBuffer,
+                        (Rx::Core::command.vkCommandBuffer,
                         0, 1, 
                         &meshes[i].getVertexBuffer(), offset);
                     
                         
                         vkCmdBindIndexBuffer
-                        (Rx::Core::command[Rx::Core::commandIndex].vkCommandBuffer,
+                        (Rx::Core::command.vkCommandBuffer,
                         meshes[i].getIndexBuffer(),
                         0, VK_INDEX_TYPE_UINT32);
                     
                         vkCmdBindDescriptorSets
-                        (Rx::Core::command[Rx::Core::commandIndex].vkCommandBuffer,
+                        (Rx::Core::command.vkCommandBuffer,
                         VK_PIPELINE_BIND_POINT_GRAPHICS,
                         Rx::Core::colorMeshPipelineLayout,
                         0, 1,
@@ -972,7 +1367,7 @@ namespace Rx{
                         0, nullptr);
                     
                         vkCmdDrawIndexed
-                        (Rx::Core::command[Rx::Core::commandIndex].vkCommandBuffer,
+                        (Rx::Core::command.vkCommandBuffer,
                         meshes[i].getNumberIndices(), 
                         1, 0, 0, 0);
                     }
@@ -981,25 +1376,25 @@ namespace Rx{
             
             });
             
-            world.system<Rx::Component::ColorMeshArray, Rx::Component::VkIndirectBuffer, Rx::Component::ColorArrayGraphics>()
+            world.system<Rx::Component::VkColorMeshArray, Rx::Component::VkIndirectBuffer, Rx::Component::VkColorModelArrayDescriptorSet>()
             .kind(onRecordRender)
             .with<RenderRunning>().src(game)
             .run([](flecs::iter& it) {
 
                 vkCmdBindPipeline
-                (Rx::Core::command[Rx::Core::commandIndex].vkCommandBuffer,
+                (Rx::Core::command.vkCommandBuffer,
                 VK_PIPELINE_BIND_POINT_GRAPHICS,
                 Rx::Core::colorMeshArrayPipeline);
 
                 while(it.next()) {
-                    auto colorMeshArray = it.field<Rx::Component::ColorMeshArray>(0);
+                    auto colorMeshArray = it.field<Rx::Component::VkColorMeshArray>(0);
                     auto indirectBuffer = it.field<Rx::Component::VkIndirectBuffer>(1);
-                    auto graphics = it.field<Rx::Component::ColorArrayGraphics>(2);
+                    auto graphics = it.field<Rx::Component::VkColorModelArrayDescriptorSet>(2);
 
                     for( auto i : it) {
                      
                         vkCmdBindDescriptorSets
-                        (Rx::Core::command[Rx::Core::commandIndex].vkCommandBuffer,
+                        (Rx::Core::command.vkCommandBuffer,
                         VK_PIPELINE_BIND_POINT_GRAPHICS,
                         Rx::Core::colorMeshArrayPipelineLayout,
                         0, 1,
@@ -1008,17 +1403,17 @@ namespace Rx{
                     
                         VkDeviceSize offset[] = { 0 };    
                         vkCmdBindVertexBuffers
-                        (Rx::Core::command[Rx::Core::commandIndex].vkCommandBuffer,
+                        (Rx::Core::command.vkCommandBuffer,
                         0, 1, 
                         &colorMeshArray[i].vertexBuffer.vkBuffer, offset);
 
                         vkCmdBindIndexBuffer
-                        (Rx::Core::command[Rx::Core::commandIndex].vkCommandBuffer,
+                        (Rx::Core::command.vkCommandBuffer,
                         colorMeshArray[i].indexBuffer.vkBuffer,
                         0, VK_INDEX_TYPE_UINT32);
 
                         vkCmdDrawIndexedIndirect
-                        (Rx::Core::command[Rx::Core::commandIndex].vkCommandBuffer,
+                        (Rx::Core::command.vkCommandBuffer,
                         indirectBuffer[i].buffer.vkBuffer, 0,
                         indirectBuffer[i].numberCommands, 
                         sizeof(VkDrawIndexedIndirectCommand));
@@ -1031,7 +1426,7 @@ namespace Rx{
             .with<RenderRunning>().src(game)
             .run([](flecs::iter& it) {
                 vkCmdBindPipeline
-                (Rx::Core::command[Rx::Core::commandIndex].vkCommandBuffer,
+                (Rx::Core::command.vkCommandBuffer,
                 VK_PIPELINE_BIND_POINT_GRAPHICS,
                 Rx::Core::instancedColorMeshPipeline);
 
@@ -1043,7 +1438,7 @@ namespace Rx{
                     for( auto i : it) {
                      
                         vkCmdBindDescriptorSets
-                        (Rx::Core::command[Rx::Core::commandIndex].vkCommandBuffer,
+                        (Rx::Core::command.vkCommandBuffer,
                         VK_PIPELINE_BIND_POINT_GRAPHICS,
                         Rx::Core::instancedColorMeshPipelineLayout,
                         0, 1,
@@ -1051,17 +1446,17 @@ namespace Rx{
 
                         VkDeviceSize offset[] = { 0 };    
                         vkCmdBindVertexBuffers
-                        (Rx::Core::command[Rx::Core::commandIndex].vkCommandBuffer,
+                        (Rx::Core::command.vkCommandBuffer,
                         0, 1, 
                         &colorMesh[i].vertexBuffer.vkBuffer, offset);
 
                         vkCmdBindIndexBuffer
-                        (Rx::Core::command[Rx::Core::commandIndex].vkCommandBuffer,
+                        (Rx::Core::command.vkCommandBuffer,
                         colorMesh[i].indexBuffer.vkBuffer,
                         0, VK_INDEX_TYPE_UINT32);
 
                         vkCmdDrawIndexed
-                        (Rx::Core::command[Rx::Core::commandIndex].vkCommandBuffer,
+                        (Rx::Core::command.vkCommandBuffer,
                         colorMesh[i].getNumberIndices(),
                         instanceBuffer[i].numberInstances,
                         0, 0, 0);
@@ -1077,7 +1472,7 @@ namespace Rx{
                 
                 
                 vkCmdBindPipeline
-                (Rx::Core::command[Rx::Core::commandIndex].vkCommandBuffer,
+                (Rx::Core::command.vkCommandBuffer,
                 VK_PIPELINE_BIND_POINT_GRAPHICS,
                 Rx::Core::textureModelPipeline);
 
@@ -1089,7 +1484,7 @@ namespace Rx{
                     for( auto i : it) {
                      
                         vkCmdBindDescriptorSets
-                        (Rx::Core::command[Rx::Core::commandIndex].vkCommandBuffer,
+                        (Rx::Core::command.vkCommandBuffer,
                         VK_PIPELINE_BIND_POINT_GRAPHICS,
                         Rx::Core::textureModelPipelineLayout,
                         0, 1,
@@ -1097,17 +1492,17 @@ namespace Rx{
 
                         VkDeviceSize offset[] = { 0 };    
                         vkCmdBindVertexBuffers
-                        (Rx::Core::command[Rx::Core::commandIndex].vkCommandBuffer,
+                        (Rx::Core::command.vkCommandBuffer,
                         0, 1, 
                         &textureMeshes[i].vertexBuffer.vkBuffer, offset);
 
                         vkCmdBindIndexBuffer
-                        (Rx::Core::command[Rx::Core::commandIndex].vkCommandBuffer,
+                        (Rx::Core::command.vkCommandBuffer,
                         textureMeshes[i].indexBuffer.vkBuffer,
                         0, VK_INDEX_TYPE_UINT32);
 
                         vkCmdDrawIndexedIndirect
-                        (Rx::Core::command[Rx::Core::commandIndex].vkCommandBuffer,
+                        (Rx::Core::command.vkCommandBuffer,
                         indirectBuffers[i].buffer.vkBuffer,
                         0, indirectBuffers[i].numberCommands,
                         sizeof(VkDrawIndexedIndirectCommand));
@@ -1121,7 +1516,7 @@ namespace Rx{
             .with<RenderRunning>().src(game)
             .run([](flecs::iter& it) {
                 vkCmdBindPipeline
-                (Rx::Core::command[Rx::Core::commandIndex].vkCommandBuffer,
+                (Rx::Core::command.vkCommandBuffer,
                 VK_PIPELINE_BIND_POINT_GRAPHICS,
                 Rx::Core::skeletonModelPipeline);
 
@@ -1133,7 +1528,7 @@ namespace Rx{
                     for( auto i : it) {
                      
                         vkCmdBindDescriptorSets
-                        (Rx::Core::command[Rx::Core::commandIndex].vkCommandBuffer,
+                        (Rx::Core::command.vkCommandBuffer,
                         VK_PIPELINE_BIND_POINT_GRAPHICS,
                         Rx::Core::skeletonModelPipelineLayout,
                         0, 1,
@@ -1141,17 +1536,17 @@ namespace Rx{
 
                         VkDeviceSize offset[] = { 0 };    
                         vkCmdBindVertexBuffers
-                        (Rx::Core::command[Rx::Core::commandIndex].vkCommandBuffer,
+                        (Rx::Core::command.vkCommandBuffer,
                         0, 1, 
                         &skeletonMeshes[i].vertexBuffer.vkBuffer, offset);
 
                         vkCmdBindIndexBuffer
-                        (Rx::Core::command[Rx::Core::commandIndex].vkCommandBuffer,
+                        (Rx::Core::command.vkCommandBuffer,
                         skeletonMeshes[i].indexBuffer.vkBuffer,
                         0, VK_INDEX_TYPE_UINT32);
 
                         vkCmdDrawIndexedIndirect
-                        (Rx::Core::command[Rx::Core::commandIndex].vkCommandBuffer,
+                        (Rx::Core::command.vkCommandBuffer,
                         indirectBuffers[i].buffer.vkBuffer,
                         0, indirectBuffers[i].numberCommands,
                         sizeof(VkDrawIndexedIndirectCommand));
@@ -1164,10 +1559,10 @@ namespace Rx{
             .with<RenderRunning>().src(game)
             .run([](flecs::iter& it) {
                 while(it.next()) {
-                    Rx::Core::endRenderPass(Rx::Core::command[Rx::Core::commandIndex]);
-                    Rx::Core::endCommand(Rx::Core::command[Rx::Core::commandIndex]);
-                    Rx::Core::submitGraphicsCommand(Rx::Core::command[Rx::Core::commandIndex]);
-                    Rx::Core::presentGraphics(Rx::Core::command[Rx::Core::commandIndex]);
+                    Rx::Core::endRenderPass(Rx::Core::command);
+                    Rx::Core::endCommand(Rx::Core::command);
+                    Rx::Core::submitGraphicsCommand(Rx::Core::command);
+                    Rx::Core::presentGraphics(Rx::Core::command);
                     Rx::Core::vulkanCommandMutex.unlock();
                 }
             });

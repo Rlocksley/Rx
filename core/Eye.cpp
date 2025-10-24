@@ -52,10 +52,10 @@ namespace Rx
 
         glm::mat4 createProjectionMatrix(float fov, float aspectRatio, float nearClip, float farClip) 
         {
-            glm::mat4 projectionMatrix;
+            glm::mat4 projectionMatrix(1.0f);
 
             float tanHalfFOV = tan(fov / 2.0f);
-            float rangeInv = 1.0f / (farClip-nearClip);
+            float depthRangeInv = 1.0f / (farClip - nearClip);
 
             projectionMatrix[0][0] = 1.0f / (aspectRatio * tanHalfFOV);
             projectionMatrix[0][1] = 0.0f;
@@ -65,13 +65,15 @@ namespace Rx
             projectionMatrix[1][1] = 1.0f / tanHalfFOV;
             projectionMatrix[1][2] = 0.0f;
             projectionMatrix[1][3] = 0.0f;
+
             projectionMatrix[2][0] = 0.0f;
             projectionMatrix[2][1] = 0.0f;
-            projectionMatrix[2][2] = (farClip) * rangeInv;
+            projectionMatrix[2][2] = farClip * depthRangeInv; // Vulkan clip depth [0, 1]
             projectionMatrix[2][3] = 1.0f;
+
             projectionMatrix[3][0] = 0.0f;
             projectionMatrix[3][1] = 0.0f;
-            projectionMatrix[3][2] = -nearClip * farClip * rangeInv;
+            projectionMatrix[3][2] = (-farClip * nearClip) * depthRangeInv;
             projectionMatrix[3][3] = 0.0f;
 
             return projectionMatrix;
@@ -88,9 +90,15 @@ namespace Rx
             memcpy(eye.pMemory, &_eye, sizeof(Eye));
         }
 
-        std::pair<glm::mat4, glm::mat4> getEyeMatrices(glm::vec3 position, glm::vec3 direction, float fov, float nearClip, float farClip){
+        std::pair<glm::mat4, glm::mat4> getEyeMatrices(glm::vec3 position, glm::vec3 direction, glm::vec3 up,  float fov, float nearClip, float farClip){
             glm::mat4 proj = createProjectionMatrix(fov, static_cast<float>(windowWidth) / static_cast<float>(windowHeight), nearClip, farClip) * createXMatrix();
-            glm::mat4 view = createViewMatrix(position, direction, glm::vec3(0.f, 1.f, 0.f));
+            glm::mat4 view = createViewMatrix(position, direction, -up);
+            return { proj, view };
+        }
+
+        std::pair<glm::mat4, glm::mat4> getEyeMatrices(glm::vec3 position, glm::vec3 direction, glm::vec3 up,  float fov, float aspectRatio, float nearClip, float farClip){
+            glm::mat4 proj = createProjectionMatrix(fov, aspectRatio, nearClip, farClip) * createXMatrix();
+            glm::mat4 view = createViewMatrix(position, direction, -up);
             return { proj, view };
         }
     }

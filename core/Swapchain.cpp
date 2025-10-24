@@ -97,8 +97,15 @@ namespace Rx
                 "vkCreateImageView")
             }
 
-            swapchain.vkSemaphore[0] = createSemaphore();
-            swapchain.vkSemaphore[1] = createSemaphore();
+            // Create one semaphore pair for each swapchain image
+            swapchain.imageAvailableSemaphores.resize(numberImages);
+            swapchain.renderFinishedSemaphores.resize(numberImages);
+            
+            for(uint32_t i = 0; i < numberImages; i++)
+            {
+                swapchain.imageAvailableSemaphores[i] = createSemaphore();
+                swapchain.renderFinishedSemaphores[i] = createSemaphore();
+            }
 
             #ifdef RX_DEBUG
             RX_LOGI("Swapchain", "created", "")
@@ -107,8 +114,14 @@ namespace Rx
 
         void destroySwapchain()
         {
-            destroySemaphore(swapchain.vkSemaphore[1]);
-            destroySemaphore(swapchain.vkSemaphore[0]);
+            for(size_t i = 0; i < swapchain.imageAvailableSemaphores.size(); i++)
+            {
+                destroySemaphore(swapchain.imageAvailableSemaphores[i]);
+                destroySemaphore(swapchain.renderFinishedSemaphores[i]);
+            }
+            
+            swapchain.imageAvailableSemaphores.clear();
+            swapchain.renderFinishedSemaphores.clear();
 
             for(size_t i = 0; i < swapchain.vkImageViews.size(); i++)
             {
@@ -134,7 +147,7 @@ namespace Rx
             (vkDevice,
             swapchain.vkSwapchainKHR,
             UINT64_MAX,
-            swapchain.vkSemaphore[Rx::Core::commandIndex],
+            swapchain.imageAvailableSemaphores[swapchain.currentSemaphoreIndex],
             nullptr,
             &swapchain.imageIndex),
             "getSwapchainImageIndex",

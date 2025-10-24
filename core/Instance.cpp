@@ -145,10 +145,10 @@ namespace Core
 
         uint32_t glfwExtensionsCount;
         const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionsCount);
-        std::vector<const char*> instanceExtensions(glfwExtensionsCount+2);
+        std::vector<const char*> instanceExtensions(glfwExtensionsCount+1);
         memcpy(instanceExtensions.data(), glfwExtensions, glfwExtensionsCount*sizeof(const char*));
         instanceExtensions[glfwExtensionsCount] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
-        instanceExtensions[glfwExtensionsCount+1] = VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME;
+        //instanceExtensions[glfwExtensionsCount+1] = VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME;
         createInfo.enabledExtensionCount = instanceExtensions.size();
         createInfo.ppEnabledExtensionNames = instanceExtensions.data();
 

@@ -2,14 +2,13 @@
 
 #include "Buffer.hpp"
 #include "flecs.h"
-#include "MeshArray.hpp"
 #include "VkInstancedColorModelBuffer.hpp"
 
 namespace Rx
 {
     namespace Component
     {
-        struct ColorArrayGraphics
+        struct VkColorModelArrayDescriptorSet
         {
             VkDescriptorSet vkDescriptorSet; // Descriptor set for Vulkan
 
@@ -17,7 +16,7 @@ namespace Rx
             void destroyDescriptorSet();
         };
 
-    void colorArrayGraphics_component_on_add(flecs::entity e, Rx::Component::VkInstancedColorModelBuffer& colorArray, Rx::Component::ColorArrayGraphics& graphics);
-    void colorArrayGraphics_component_on_remove(flecs::entity e, Rx::Component::ColorArrayGraphics& graphics);
+    void colorArrayGraphics_component_on_add(flecs::entity e, Rx::Component::VkInstancedColorModelBuffer& colorArray, Rx::Component::VkColorModelArrayDescriptorSet& graphics);
+    void colorArrayGraphics_component_on_remove(flecs::entity e, Rx::Component::VkColorModelArrayDescriptorSet& graphics);
 }
 }

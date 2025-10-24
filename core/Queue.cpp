@@ -74,11 +74,11 @@ namespace Rx
             submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
             submitInfo.pWaitDstStageMask = stageFlags.data();
             submitInfo.waitSemaphoreCount = 1;
-            submitInfo.pWaitSemaphores = &swapchain.vkSemaphore[Rx::Core::commandIndex];
+            submitInfo.pWaitSemaphores = &swapchain.imageAvailableSemaphores[swapchain.currentSemaphoreIndex];
             submitInfo.commandBufferCount = 1;
             submitInfo.pCommandBuffers = &command.vkCommandBuffer;
             submitInfo.signalSemaphoreCount = 1;
-            submitInfo.pSignalSemaphores = &command.vkSemaphore;
+            submitInfo.pSignalSemaphores = &swapchain.renderFinishedSemaphores[swapchain.currentSemaphoreIndex];
             
             RX_CHECK_VULKAN
             (vkQueueSubmit
@@ -95,7 +95,7 @@ namespace Rx
             VkPresentInfoKHR presentInfo{};
             presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
             presentInfo.waitSemaphoreCount = 1;
-            presentInfo.pWaitSemaphores = &command.vkSemaphore;
+            presentInfo.pWaitSemaphores = &swapchain.renderFinishedSemaphores[swapchain.currentSemaphoreIndex];
             presentInfo.swapchainCount = 1;
             presentInfo.pSwapchains = &swapchain.vkSwapchainKHR;
             presentInfo.pImageIndices = &swapchain.imageIndex;
@@ -106,6 +106,9 @@ namespace Rx
             &presentInfo),
             "presentGraphics",
             "vkQueuePresentKHR")
+            
+            // Cycle to next semaphore pair
+            swapchain.currentSemaphoreIndex = (swapchain.currentSemaphoreIndex + 1) % swapchain.imageAvailableSemaphores.size();
         }
     }
 }

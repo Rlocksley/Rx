@@ -23,10 +23,10 @@ namespace Rx
         inline Shader colorMeshFragmentShader("./shader/colorMeshFragmentShader.frag.spv");
 
         inline Shader colorMeshArrayVertexShader{"shader/colorMeshArrayVertexShader.vert.spv"};
-        inline Shader colorMeshArrayFragmentShader{"shader/colorMeshFragmentShader.frag.spv"};
+        inline Shader colorMeshArrayFragmentShader{"shader/colorMeshArrayFragmentShader.frag.spv"};
 
         inline Shader instancedColorMeshVertexShader{"shader/instancedColorMeshVertexShader.vert.spv"};
-        inline Shader instancedColorMeshFragmentShader{"shader/colorMeshFragmentShader.frag.spv"};
+        inline Shader instancedColorMeshFragmentShader{"shader/colorMeshArrayFragmentShader.frag.spv"};
 
         inline Shader textureModelVertexShader{"shader/TextureModelShader.vert.spv"};
         inline Shader textureModelFragmentShader{"shader/TextureModelShader.frag.spv"};
@@ -36,5 +36,12 @@ namespace Rx
 
         inline Shader skeletonModelComputeShader{"shader/SkeletonModelShader.comp.spv"};
 
+        inline Shader shadowColorMeshVertexShader{"shader/ShadowColorMeshVertexShader.vert.spv"};
+
+        inline Shader shadowColorModelArrayVertexShader{"shader/ShadowColorModelArrayVertexShader.vert.spv"};
+
+        inline Shader shadowTextureModelVertexShader{"shader/ShadowTextureModelVertexShader.vert.spv"};
+
+        inline Shader shadowSkeletonModelVertexShader{"shader/ShadowSkeletonModelVertexShader.vert.spv"};
     }
 }

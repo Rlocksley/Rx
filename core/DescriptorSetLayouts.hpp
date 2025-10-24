@@ -37,5 +37,21 @@ namespace Rx
         void createSkeletonModelCompDescriptorSetLayout();
         void destroySkeletonModelCompDescriptorSetLayout();
         
+        inline VkDescriptorSetLayout shadowColorMeshDescriptorSetLayout;
+        void createShadowColorMeshDescriptorSetLayout();
+        void destroyShadowColorMeshDescriptorSetLayout();
+
+        inline VkDescriptorSetLayout shadowColorModelArrayDescriptorSetLayout;
+        void createShadowColorModelArrayDescriptorSetLayout();
+        void destroyShadowColorModelArrayDescriptorSetLayout();
+
+        inline VkDescriptorSetLayout shadowTextureModelDescriptorSetLayout;
+        void createShadowTextureModelDescriptorSetLayout();
+        void destroyShadowTextureModelDescriptorSetLayout();
+
+        inline VkDescriptorSetLayout shadowSkeletonModelDescriptorSetLayout;
+        void createShadowSkeletonModelDescriptorSetLayout();
+        void destroyShadowSkeletonModelDescriptorSetLayout();
+
     }
 }

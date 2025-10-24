@@ -33,5 +33,21 @@ namespace Rx
         inline VkPipeline skeletonModelCompPipeline;
         void createSkeletonModelCompPipeline();
         void destroySkeletonModelCompPipeline();
+
+        inline VkPipeline shadowColorMeshPipeline[16];
+        void createShadowColorMeshPipeline();
+        void destroyShadowColorMeshPipeline();
+
+        inline VkPipeline shadowColorModelArrayPipeline[16];
+        void createShadowColorModelArrayPipeline();
+        void destroyShadowColorModelArrayPipeline();
+        
+        inline VkPipeline shadowTextureModelPipeline[16];
+        void createShadowTextureModelPipeline();
+        void destroyShadowTextureModelPipeline();
+
+        inline VkPipeline shadowSkeletonModelPipeline[16];
+        void createShadowSkeletonModelPipeline();
+        void destroyShadowSkeletonModelPipeline();
     }
 }

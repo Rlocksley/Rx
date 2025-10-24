@@ -15,10 +15,18 @@ namespace Rx
             createTextureModelPipelineLayout();
             createSkeletonModelPipelineLayout();
             createSkeletonModelCompPipelineLayout();
+            createShadowColorMeshPipelineLayout();
+            createShadowColorModelArrayPipelineLayout();
+            createShadowTextureModelPipelineLayout();
+            createShadowSkeletonModelPipelineLayout();
         }
 
         void destroyPipelineLayouts()
         {
+            destroyShadowSkeletonModelPipelineLayout();
+            destroyShadowTextureModelPipelineLayout();
+            destroyShadowColorModelArrayPipelineLayout();
+            destroyShadowColorMeshPipelineLayout();
             destroySkeletonModelCompPipelineLayout();
             destroySkeletonModelPipelineLayout();
             destroyTextureModelPipelineLayout();
@@ -185,5 +193,106 @@ namespace Rx
             vkDestroyPipelineLayout(Core::vkDevice, skeletonModelCompPipelineLayout, nullptr);
             );
         }
+
+        void createShadowColorMeshPipelineLayout(){
+            VkPipelineLayoutCreateInfo layoutInfo{};
+            layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+            layoutInfo.setLayoutCount = 1;
+            layoutInfo.pSetLayouts = &shadowColorMeshDescriptorSetLayout;
+
+            RX_VK_MUTEX(
+            RX_CHECK_VULKAN(
+            vkCreatePipelineLayout
+            (Core::vkDevice, 
+            &layoutInfo, 
+            nullptr, 
+            &shadowColorMeshPipelineLayout),
+            "createShadowColorMeshPipelineLayout",
+            "vkCreatePipelineLayout"
+            ));
+        }
+        void destroyShadowColorMeshPipelineLayout(){
+            RX_VK_MUTEX(
+            vkDestroyPipelineLayout(Core::vkDevice, shadowColorMeshPipelineLayout, nullptr);
+            );
+        }
+
+
+        
+        void createShadowColorModelArrayPipelineLayout(){
+            VkPipelineLayoutCreateInfo layoutInfo{};
+            layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+            layoutInfo.setLayoutCount = 1;
+            layoutInfo.pSetLayouts = &shadowColorModelArrayDescriptorSetLayout;
+
+            RX_VK_MUTEX(
+            RX_CHECK_VULKAN(
+            vkCreatePipelineLayout
+            (Core::vkDevice, 
+            &layoutInfo, 
+            nullptr, 
+            &shadowColorModelArrayPipelineLayout),
+            "createShadowColorModelArrayPipelineLayout",
+            "vkCreatePipelineLayout"
+            ));
+        }
+
+        void destroyShadowColorModelArrayPipelineLayout(){
+            RX_VK_MUTEX(
+            vkDestroyPipelineLayout(Core::vkDevice, shadowColorModelArrayPipelineLayout, nullptr);
+            );
+
+        }
+
+        void createShadowTextureModelPipelineLayout(){
+            VkPipelineLayoutCreateInfo layoutInfo{};
+            layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+            layoutInfo.setLayoutCount = 1;
+            layoutInfo.pSetLayouts = &shadowTextureModelDescriptorSetLayout;
+
+            RX_VK_MUTEX(
+            RX_CHECK_VULKAN(
+            vkCreatePipelineLayout
+            (Core::vkDevice, 
+            &layoutInfo, 
+            nullptr, 
+            &shadowTextureModelPipelineLayout),
+            "createShadowTextureModelPipelineLayout",
+            "vkCreatePipelineLayout"
+            ));
+        }
+
+        void destroyShadowTextureModelPipelineLayout(){
+            RX_VK_MUTEX(
+            vkDestroyPipelineLayout(Core::vkDevice, shadowTextureModelPipelineLayout, nullptr);
+            );
+        }
+     
+        
+        void createShadowSkeletonModelPipelineLayout(){
+            VkPipelineLayoutCreateInfo layoutInfo{};
+            layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+            layoutInfo.setLayoutCount = 1;
+            layoutInfo.pSetLayouts = &shadowSkeletonModelDescriptorSetLayout;
+
+            RX_VK_MUTEX(
+            RX_CHECK_VULKAN(
+            vkCreatePipelineLayout
+            (Core::vkDevice, 
+            &layoutInfo, 
+            nullptr, 
+            &shadowSkeletonModelPipelineLayout),
+            "createShadowSkeletonModelPipelineLayout",
+            "vkCreatePipelineLayout"
+            ));
+        
+        }
+
+        void destroyShadowSkeletonModelPipelineLayout(){
+            RX_VK_MUTEX(
+            vkDestroyPipelineLayout(Core::vkDevice, shadowSkeletonModelPipelineLayout, nullptr);
+            );
+        }
+
     }
 } // namespace Rx::Core

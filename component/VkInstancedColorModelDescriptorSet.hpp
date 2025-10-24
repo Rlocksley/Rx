@@ -2,7 +2,6 @@
 
 #include "Buffer.hpp"
 #include "flecs.h"
-#include "MeshArray.hpp"
 #include "VkInstancedColorModelBuffer.hpp"
 
 namespace Rx

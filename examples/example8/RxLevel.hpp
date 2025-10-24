@@ -509,7 +509,7 @@ struct Actors{
 
                     // 1. Unproject mouse coordinates to get a world space ray
                     glm::mat4 proj, view;
-                    std::tie(proj, view) = Rx::Core::getEyeMatrices(camTf.translation, camTf.forward(), camComp.fov, camComp.nearClip, camComp.farClip);
+                    std::tie(proj, view) = Rx::Core::getEyeMatrices(camTf.translation, camTf.forward(), glm::vec3(0, 1.f, 0), camComp.fov, camComp.nearClip, camComp.farClip);
                     glm::mat4 invProjView = glm::inverse(proj * view);
 
                     float mouseX = Rx::Input::cursor.position.x;

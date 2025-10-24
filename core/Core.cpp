@@ -1,5 +1,6 @@
 #include "Core.hpp"
 #include "Mutex.hpp"
+#include "Image.hpp"
 
 namespace Rx
 {
@@ -20,8 +21,7 @@ namespace Core
         createDescriptorPool();
 
 
-        Core::command[0] = createCommand();
-        Core::command[1] =  createCommand();
+        Core::command = createCommand();
 
         Core::singleCommand = createSingleCommand();
 
@@ -32,6 +32,7 @@ namespace Core
         createFramebuffers();
 
         createLightBuffers();
+        createShadowMapArray(10048, 10048, 16, VK_FORMAT_D32_SFLOAT);
 
         createDescriptorSetLayouts();
         createPipelineLayouts();
@@ -44,6 +45,7 @@ namespace Core
         destroyPipelineLayouts();
         destroyDescriptorSetLayouts();
 
+        destroyShadowMapArray();
         destroyLightBuffers();
         
         destroyFramebuffers();
@@ -53,8 +55,7 @@ namespace Core
         destroyEye();
 
         destroySingleCommand(Core::singleCommand);   
-        destroyCommand(Core::command[1]);
-        destroyCommand(Core::command[0]);
+        destroyCommand(Core::command);
 
         
         destroyDescriptorPool();
@@ -68,8 +69,7 @@ namespace Core
 
     bool updateCore()
     {
-        Rx::Core::commandIndex = (Rx::Core::commandIndex + 1) % 2;
-        Rx::Core::waitForCommand(Rx::Core::command[Rx::Core::commandIndex]);
+        Rx::Core::waitForCommand(Rx::Core::command);
 
         glfwPollEvents();
         

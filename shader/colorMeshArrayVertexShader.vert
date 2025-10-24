@@ -10,6 +10,20 @@ layout(binding = 0) uniform Eye
     mat4 projView;
 } eye;
 
+struct ShadowSpotLight
+{
+    vec4 position;
+    vec4 direction;
+    vec4 color;
+    vec4 intensity;
+    mat4 lightSpaceMatrix;
+};
+
+layout(binding = 3) uniform ShadowSpotLightBuffer
+{
+    ivec4 numberShadowSpotLights;
+    ShadowSpotLight lights[16];
+} shadowSpotLightBuffer;
 
 struct ColorMeshInstance
 {
@@ -20,7 +34,7 @@ struct ColorMeshInstance
     vec4 emissive;
 };
 
-layout(binding = 3, std430) restrict readonly buffer ModelBuffer
+layout(binding = 5, std430) restrict readonly buffer ModelBuffer
 {
     ColorMeshInstance instances[];
 } modelBuffer;
@@ -34,6 +48,7 @@ layout(location = 1) out vec3 fragNormal;
 layout(location = 2) out vec3 albedo;
 layout(location = 3) out vec3 metalRough;
 layout(location = 4) out vec3 emissive;
+layout(location = 5) out vec4 outFragPosLightSpace[16];
 
 void main() {
    
@@ -48,4 +63,10 @@ void main() {
     albedo = instance.albedo.rgb;
     metalRough = instance.metalRough.rgb;
     emissive = instance.emissive.rgb;
+
+     // Calculate fragment position in light space for each shadow spot light
+    int numShadowLights = shadowSpotLightBuffer.numberShadowSpotLights.x;
+    for (int i = 0; i < numShadowLights && i < 16; ++i) {
+        outFragPosLightSpace[i] = shadowSpotLightBuffer.lights[i].lightSpaceMatrix * worldPosition;
+    }
 }

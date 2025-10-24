@@ -287,7 +287,90 @@ namespace Rx
             vmaDestroyImage(vmaAllocator, texture.vkImage, texture.vmaAllocation);)
         }
 
-/*
+        void createShadowMapArray(uint32_t width, uint32_t height, uint32_t count, VkFormat format){
+            shadowMapArray.width = width;
+            shadowMapArray.height = height;
+            shadowMapArray.count = count;
+            shadowMapArray.format = format;
+
+            // Create the Vulkan image
+            VkImageCreateInfo createInfo{};
+            createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+            createInfo.imageType = VK_IMAGE_TYPE_2D;
+            createInfo.extent.width = width;
+            createInfo.extent.height = height;
+            createInfo.extent.depth = 1;
+            createInfo.mipLevels = 1;
+            createInfo.arrayLayers = count;
+            createInfo.format = format;
+            createInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            createInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+            createInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+            createInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+
+            VmaAllocationCreateInfo allocInfo{};
+            allocInfo.usage = VMA_MEMORY_USAGE_AUTO;
+            allocInfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
+            allocInfo.priority = 1.f;
+
+            RX_CHECK_VULKAN
+            (vmaCreateImage
+            (vmaAllocator,
+            &createInfo,
+            &allocInfo,
+            &shadowMapArray.vkImage,
+            &shadowMapArray.vmaAllocation,
+            &shadowMapArray.vmaAllocationInfo),
+            "createShadowMapArray",
+            "vkCreateImage")
+
+           
+
+            VkImageViewCreateInfo viewInfo{};
+            viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+            viewInfo.image = shadowMapArray.vkImage;
+            viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+            viewInfo.format = format;
+            viewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+            viewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+            viewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+            viewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+            viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+            viewInfo.subresourceRange.baseMipLevel = 0;
+            viewInfo.subresourceRange.levelCount = 1;
+            viewInfo.subresourceRange.baseArrayLayer = 0;
+            viewInfo.subresourceRange.layerCount = count;
+
+            RX_CHECK_VULKAN
+            (vkCreateImageView(vkDevice, &viewInfo, nullptr, &shadowMapArray.vkImageView),
+            "createShadowMapArray",
+            "vkCreateImageView")
+
+            VkSamplerCreateInfo samplerInfo{};
+            samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+            samplerInfo.magFilter = VK_FILTER_NEAREST;
+            samplerInfo.minFilter = VK_FILTER_NEAREST;
+            samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+            samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+            samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+            samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+            samplerInfo.unnormalizedCoordinates = VK_FALSE;
+            samplerInfo.compareEnable = VK_TRUE;
+            samplerInfo.compareOp = VK_COMPARE_OP_LESS;
+            samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+
+            RX_CHECK_VULKAN
+            (vkCreateSampler(vkDevice, &samplerInfo, nullptr, &shadowMapArray.vkSampler),
+            "createShadowMapArray",
+            "vkCreateSampler")
+        }
+
+        void destroyShadowMapArray(){
+            vkDestroySampler(vkDevice, shadowMapArray.vkSampler, nullptr);
+            vkDestroyImageView(vkDevice, shadowMapArray.vkImageView, nullptr);
+            vmaDestroyImage(vmaAllocator, shadowMapArray.vkImage, shadowMapArray.vmaAllocation);
+        }
+        /*  
 
         Image createImage
         (uint32_t width, uint32_t height,

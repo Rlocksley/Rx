@@ -11,6 +11,7 @@
 #include "VkTransformBuffer.hpp"
 #include "VkTextureArray.hpp"
 #include "VkSkeletonModelDescriptorSet.hpp"
+#include "VkShadowSkeletonModelDescriptorSet.hpp"
 #include "GameWorldBase.hpp"
 #include "LoadTextureModel.hpp"
 #include "NodeTransform.hpp"
@@ -267,6 +268,7 @@ namespace Asset{
 
         
         asset.add<Rx::Component::VkSkeletonModelDescriptorSet>();
+        asset.add<Rx::Component::VkShadowSkeletonModelDescriptorSet>();
         asset.add<Rx::ShouldBeUpdated>();
 
         flecs::entity animationPrefab = world.prefab((assetName + "_Animation").c_str());

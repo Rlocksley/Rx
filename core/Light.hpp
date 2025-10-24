@@ -37,9 +37,23 @@ namespace Rx{
             SpotLight lights[256];
         };
 
+        struct ShadowSpotLight{
+            glm::vec4 position;
+            glm::vec4 direction;
+            glm::vec4 color;
+            glm::vec4 intensity;
+            glm::mat4 lightSpaceMatrix;
+        };
+
+        struct ShadowSpotLightBuffer{
+            glm::ivec4 numberShadowSpotLights;
+            ShadowSpotLight lights[16];
+        };
+
         inline BufferInterface pointLightBuffer;
         inline BufferInterface directionalLightBuffer;
         inline BufferInterface spotLightBuffer;
+        inline BufferInterface shadowSpotLightBuffer;
 
         void createLightBuffers();
         void destroyLightBuffers();

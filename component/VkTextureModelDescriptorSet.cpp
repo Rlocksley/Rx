@@ -37,7 +37,7 @@ namespace Rx{
             "VkTextureModelDescriptorSet::createDescriptorSet",
             "vkAllocateDescriptorSets"))
 
-            std::vector<VkDescriptorBufferInfo> bufferInfo(5);
+            std::vector<VkDescriptorBufferInfo> bufferInfo(6);
             bufferInfo[0].buffer = Core::eye.vkBuffer;
             bufferInfo[0].offset = 0;
             bufferInfo[0].range = sizeof(Core::Eye);
@@ -47,13 +47,21 @@ namespace Rx{
             bufferInfo[2].buffer = Core::directionalLightBuffer.vkBuffer;
             bufferInfo[2].offset = 0;
             bufferInfo[2].range = sizeof(Core::DirectionalLightBuffer);
-            bufferInfo[3].buffer = transformBuffer.buffer.vkBuffer;
+            bufferInfo[3].buffer = Core::shadowSpotLightBuffer.vkBuffer;
             bufferInfo[3].offset = 0;
-            bufferInfo[3].range = sizeof(TransformInstance) * transformBuffer.maxNumberTransforms;
-            bufferInfo[4].buffer = textureMaterialBuffer.buffer.vkBuffer;
+            bufferInfo[3].range = sizeof(Core::ShadowSpotLightBuffer);
+            bufferInfo[4].buffer = transformBuffer.buffer.vkBuffer;
             bufferInfo[4].offset = 0;
-            bufferInfo[4].range = sizeof(TextureMaterial) * textureMaterialBuffer.maxNumberMaterials;
+            bufferInfo[4].range = sizeof(TransformInstance) * transformBuffer.maxNumberTransforms;
+            bufferInfo[5].buffer = textureMaterialBuffer.buffer.vkBuffer;
+            bufferInfo[5].offset = 0;
+            bufferInfo[5].range = sizeof(TextureMaterial) * textureMaterialBuffer.maxNumberMaterials;
 
+            VkDescriptorImageInfo shadowMapInfo{};
+            shadowMapInfo.sampler = Core::shadowMapArray.vkSampler;
+            shadowMapInfo.imageView = Core::shadowMapArray.vkImageView;
+            shadowMapInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            
             std::vector<VkDescriptorImageInfo> imageInfos(textureArray.textures.size());
             for (size_t i = 0; i < textureArray.textures.size(); i++) {
                 imageInfos[i] = {
@@ -63,7 +71,7 @@ namespace Rx{
                 };
             }
 
-            std::vector<VkWriteDescriptorSet> writeSet(6);
+            std::vector<VkWriteDescriptorSet> writeSet(8);
             writeSet[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             writeSet[0].dstSet = vkDescriptorSet;
             writeSet[0].dstBinding = 0;
@@ -94,36 +102,60 @@ namespace Rx{
             writeSet[2].pImageInfo = nullptr;
             writeSet[2].pTexelBufferView = nullptr;
             writeSet[2].pNext = nullptr;
+            // Binding 3: ShadowSpotLightBuffer (UBO)
             writeSet[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             writeSet[3].dstSet = vkDescriptorSet;
             writeSet[3].dstBinding = 3;
             writeSet[3].dstArrayElement = 0;
-            writeSet[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            writeSet[3].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             writeSet[3].descriptorCount = 1;
             writeSet[3].pBufferInfo = &bufferInfo[3];
             writeSet[3].pImageInfo = nullptr;
             writeSet[3].pTexelBufferView = nullptr;
             writeSet[3].pNext = nullptr;
+               // Binding 4: ShadowMapArray (Combined Image Sampler)
             writeSet[4].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             writeSet[4].dstSet = vkDescriptorSet;
             writeSet[4].dstBinding = 4;
             writeSet[4].dstArrayElement = 0;
-            writeSet[4].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            writeSet[4].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             writeSet[4].descriptorCount = 1;
-            writeSet[4].pBufferInfo = &bufferInfo[4];
-            writeSet[4].pImageInfo = nullptr;
+            writeSet[4].pBufferInfo = nullptr;
+            writeSet[4].pImageInfo = &shadowMapInfo;
             writeSet[4].pTexelBufferView = nullptr;
             writeSet[4].pNext = nullptr;
+          
+           
             writeSet[5].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             writeSet[5].dstSet = vkDescriptorSet;
             writeSet[5].dstBinding = 5;
             writeSet[5].dstArrayElement = 0;
-            writeSet[5].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            writeSet[5].descriptorCount = static_cast<uint32_t>(imageInfos.size());
-            writeSet[5].pBufferInfo = nullptr;
-            writeSet[5].pImageInfo = imageInfos.data();
+            writeSet[5].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            writeSet[5].descriptorCount = 1;
+            writeSet[5].pBufferInfo = &bufferInfo[4];
+            writeSet[5].pImageInfo = nullptr;
             writeSet[5].pTexelBufferView = nullptr;
             writeSet[5].pNext = nullptr;
+            writeSet[6].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            writeSet[6].dstSet = vkDescriptorSet;
+            writeSet[6].dstBinding = 6;
+            writeSet[6].dstArrayElement = 0;
+            writeSet[6].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            writeSet[6].descriptorCount = 1;
+            writeSet[6].pBufferInfo = &bufferInfo[5];
+            writeSet[6].pImageInfo = nullptr;
+            writeSet[6].pTexelBufferView = nullptr;
+            writeSet[6].pNext = nullptr;
+            writeSet[7].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            writeSet[7].dstSet = vkDescriptorSet;
+            writeSet[7].dstBinding = 7;
+            writeSet[7].dstArrayElement = 0;
+            writeSet[7].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            writeSet[7].descriptorCount = static_cast<uint32_t>(imageInfos.size());
+            writeSet[7].pBufferInfo = nullptr;
+            writeSet[7].pImageInfo = imageInfos.data();
+            writeSet[7].pTexelBufferView = nullptr;
+            writeSet[7].pNext = nullptr;
             
             RX_VK_MUTEX(
             vkUpdateDescriptorSets
