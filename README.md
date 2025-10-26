@@ -13,7 +13,6 @@ Quick start
 What you'll find here
 - A series of numbered examples (example1 .. example12). Each example is a self-contained small application that demonstrates a particular set of features.
 
-example 8
 Contributing
 - Issues and PRs welcome. I try to build a Fantasy-RPG.
 - Keep systems modular: rendering, animation, physics, and gameplay should be decoupled via ECS systems.
